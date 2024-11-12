@@ -1,16 +1,10 @@
 // src/services/authService.js
 
 // Importamos axios para realizar peticiones HTTP
-import axios from 'axios';
+const axios = require('axios');
 
 // URL base de nuestra API backend
 const API_URL = 'http://localhost:8080/api';
-
-/**
- * Configuración de la instancia de axios
- * Esto nos permite tener una configuración centralizada para todas las peticiones
- */
-
 
 const axiosInstance = axios.create({
   baseURL: API_URL, // URL base que se utilizará para todas las peticiones
