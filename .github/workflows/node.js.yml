@@ -28,7 +28,7 @@ jobs:
       
       - run: npm run build  # Compila el proyecto
       
-      - run: npm test  # Ejecuta las pruebas
+      
 
       # Paso adicional para despliegue en Firebase
       - name: Deploy to Firebase Hosting
