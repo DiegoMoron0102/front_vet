@@ -3,6 +3,6 @@ module.exports = {
     "^.+\\.[tj]sx?$": "babel-jest",
   },
   transformIgnorePatterns: [
-    "node_modules/(?!(axios)/)", // Permite que Jest transforme axios
+    "node_modules/(?!(axios)/)", // Asegura que Jest no ignore `axios` en `node_modules`
   ],
 };
