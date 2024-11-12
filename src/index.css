@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fuentes personalizadas */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .btn-primary {
+    @apply w-full flex justify-center py-2 px-4 border border-transparent 
+           rounded-md shadow-sm text-sm font-medium text-white 
+           bg-primary-600 hover:bg-primary-700 focus:outline-none 
+           focus:ring-2 focus:ring-offset-2 focus:ring-primary-500
+           transition-colors duration-200;
+  }
+
+  .input-primary {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300
+           focus:ring-2 focus:ring-primary-500 
+           focus:border-primary-500 transition
+           placeholder-gray-400 text-gray-900;
+  }
+
+  .form-container {
+    @apply min-h-screen flex items-center justify-center 
+           bg-gray-50 py-12 px-4 sm:px-6 lg:px-8;
+  }
+
+  .form-box {
+    @apply max-w-md w-full space-y-8 bg-white 
+           p-8 rounded-lg shadow-lg;
+  }
+
+  .form-title {
+    @apply mt-6 text-center text-3xl font-extrabold text-gray-900;
+  }
+
+  .form-subtitle {
+    @apply mt-2 text-center text-sm text-gray-600;
+  }
+
+  .form-link {
+    @apply font-medium text-primary-600 hover:text-primary-500;
+  }
+}
