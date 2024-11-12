@@ -10,6 +10,8 @@ const API_URL = 'http://localhost:8080/api';
  * Configuración de la instancia de axios
  * Esto nos permite tener una configuración centralizada para todas las peticiones
  */
+const axios = require('axios');
+
 const axiosInstance = axios.create({
   baseURL: API_URL, // URL base que se utilizará para todas las peticiones
   headers: {
