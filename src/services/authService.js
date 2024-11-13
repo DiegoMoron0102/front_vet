@@ -1,7 +1,8 @@
 // src/services/authService.js
 
 // Importamos axios para realizar peticiones HTTP
-const axios = require('axios');
+const axios = require('axios').default;
+jest.mock('axios');
 
 // URL base de nuestra API backend
 const API_URL = 'http://localhost:8080/api';

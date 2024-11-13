@@ -1,5 +1,7 @@
 module.exports = {
-  // Resto de la configuración
+  moduleNameMapper: {
+    "^axios$": require.resolve("./src/__mocks__/axiosMock.js"), // Redirige axios a un mock
+  },
   transform: {
     "^.+\\.[tj]sx?$": "babel-jest",
   },
