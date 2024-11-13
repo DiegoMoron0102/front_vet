@@ -1,9 +1,10 @@
+// src/App.test.js
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import App from './App';
-jest.mock('axios');
 
-test('renders learn react link', () => {
+test('renders login form with "Iniciar Sesión" title', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const elements = screen.getAllByText(/iniciar sesión/i);
+  expect(elements[0]).toBeInTheDocument(); // Verifica el primer elemento encontrado
 });
