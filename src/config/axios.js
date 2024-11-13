@@ -1,7 +1,8 @@
 // src/config/axios.js
-jest.mock('axios');
-const axios = require('axios');
 
+const axios = require('axios').default;
+
+jest.mock('axios');
 
 
 const axiosInstance = axios.create({
