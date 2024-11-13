@@ -1,4 +1,5 @@
 // src/config/axios.js
+jest.mock('axios');
 const axios = require('axios');
 
 
