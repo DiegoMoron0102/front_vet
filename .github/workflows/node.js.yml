@@ -8,12 +8,11 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x]  # Puedes elegir una versión específica
+        node-version: [18.x]
 
     steps:
       - uses: actions/checkout@v4
@@ -24,17 +23,16 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
       
-      - run: npm ci  # Instalación limpia de dependencias
+      - run: npm ci
       
-      - run: npm run build  # Compila el proyecto
+      - run: npm run build
       
-      - run: npm test  # Ejecuta las pruebas
+      - run: npm test
 
-      # Paso adicional para despliegue en Firebase
       - name: Deploy to Firebase Hosting
-        if: github.ref == 'refs/heads/main'  # Solo despliega desde la rama 'main'
+        if: github.ref == 'refs/heads/main'
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
           npm install -g firebase-tools
           firebase deploy --only hosting
