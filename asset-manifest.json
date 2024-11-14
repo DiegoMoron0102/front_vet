@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/front_vet/static/css/main.5d4a79f6.css",
-    "main.js": "/front_vet/static/js/main.101f9fb8.js",
+    "main.js": "/front_vet/static/js/main.e9c50d43.js",
     "static/media/axios.cjs": "/front_vet/static/media/axios.693cfcc9e5223535a0dc.cjs",
     "index.html": "/front_vet/index.html",
     "main.5d4a79f6.css.map": "/front_vet/static/css/main.5d4a79f6.css.map",
-    "main.101f9fb8.js.map": "/front_vet/static/js/main.101f9fb8.js.map"
+    "main.e9c50d43.js.map": "/front_vet/static/js/main.e9c50d43.js.map"
   },
   "entrypoints": [
     "static/css/main.5d4a79f6.css",
-    "static/js/main.101f9fb8.js"
+    "static/js/main.e9c50d43.js"
   ]
 }
