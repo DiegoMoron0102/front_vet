@@ -3,7 +3,7 @@
 // Importamos axios para realizar peticiones HTTP
 import axios from 'axios';
 
-
+//revision para ver que se esta utilizando el import
 // URL base de nuestra API backend
 const API_URL = 'http://localhost:8080/api';
 
