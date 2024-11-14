@@ -1,8 +1,7 @@
 // src/services/authService.js
 
 // Importamos axios para realizar peticiones HTTP
-const axios = require('axios').default;
-
+import axios from 'axios';
 
 
 // URL base de nuestra API backend

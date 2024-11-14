@@ -1,6 +1,6 @@
 // src/config/axios.js
 
-const axios = require('axios').default;
+import axios from 'axios';
 
 
 const axiosInstance = axios.create({
