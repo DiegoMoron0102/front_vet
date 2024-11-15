@@ -130,10 +130,22 @@ const ServiceList = () => {
   };
 
   // Mostrar detalles en un modal
-  const handleViewDetails = (service) => {
-    setSelectedService(service);
-    setIsModalOpen(true);
+  const handleViewDetails = async (service) => {
+    try {
+      const response = await axios.get(`/services/${service.id}/details`);
+      if (response.data.success) {
+        const details = response.data.data;
+        setSelectedService(details);
+        setIsModalOpen(true);
+      } else {
+        toast.error('No se pudieron cargar los detalles del servicio');
+      }
+    } catch (error) {
+      console.error('Error al obtener detalles del servicio:', error);
+      toast.error('Error al cargar los detalles del servicio');
+    }
   };
+  
 
   const closeModal = () => {
     setSelectedService(null);
@@ -196,19 +208,19 @@ const ServiceList = () => {
         isLoading={isLoading}
       />
 
-      {isModalOpen && selectedService && (
+        {isModalOpen && selectedService && (
         <Modal isOpen={isModalOpen} onClose={closeModal} title="Detalles del Servicio">
-          <div>
+            <div>
             <h3 className="text-xl font-bold">{selectedService.name}</h3>
             <p><strong>Descripción:</strong> {selectedService.description}</p>
             <p><strong>Precio:</strong> ${selectedService.price}</p>
             <p><strong>Duración:</strong> {selectedService.durationMinutes} minutos</p>
-            <p><strong>Requisitos:</strong> {selectedService.requirements?.join(', ') || 'N/A'}</p>
-            <p><strong>Recomendaciones:</strong> {selectedService.recommendations?.join(', ') || 'N/A'}</p>
-            <p><strong>Advertencias:</strong> {selectedService.warnings?.join(', ') || 'N/A'}</p>
-          </div>
+            <p><strong>Requisitos:</strong> {selectedService.requirements?.join(', ') || 'No especificados'}</p>
+            <p><strong>Recomendaciones:</strong> {selectedService.recommendations?.join(', ') || 'No especificadas'}</p>
+            <p><strong>Advertencias:</strong> {selectedService.warnings?.join(', ') || 'No especificadas'}</p>
+            </div>
         </Modal>
-      )}
+        )}
     </div>
   );
 };

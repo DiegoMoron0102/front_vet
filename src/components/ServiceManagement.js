@@ -59,7 +59,6 @@ const ServiceManagement = () => {
   });
   const searchTimeoutRef = useRef(null);
 
-  // Función para cargar servicios
   const loadServices = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -69,7 +68,12 @@ const ServiceManagement = () => {
         searchTerm: searchTerm || null,
         category: category !== 'All' ? category : null,
       };
+  
       const response = await axios.get('/services/list', { params });
+  
+      // Agregar el console.log para verificar la respuesta de la base de datos
+      console.log('Datos obtenidos de /services/list:', response.data);
+  
       if (response?.data?.data?.content) {
         setServices(response.data.data.content);
         setPagination((prev) => ({
@@ -94,8 +98,7 @@ const ServiceManagement = () => {
       setIsLoading(false);
     }
   }, [pagination.pageNumber, pagination.pageSize, searchTerm, category]);
-
-  // Cargar categorías
+  
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -137,29 +140,6 @@ const ServiceManagement = () => {
     }
   };
 
-  const handleEditService = async (e) => {
-    e.preventDefault();
-    try {
-      const data = {
-        name: formData.name,
-        description: formData.description,
-        price: formData.price,
-        durationMinutes: formData.duration,
-        category: formData.category,
-        requirements: formData.requirements,
-        recommendations: formData.recommendations,
-        warnings: formData.warnings,
-      };
-
-      await axios.put(`/services/${selectedService.id}`, data);  // PUT request para editar servicio
-      toast.success('Servicio actualizado exitosamente');
-      loadServices();
-      closeForm();
-    } catch (error) {
-      toast.error('Error al actualizar el servicio');
-    }
-  };
-
   const handleDeleteService = async (id) => {
     try {
       await axios.delete(`/services/${id}`); // DELETE request para eliminar servicio
@@ -170,22 +150,83 @@ const ServiceManagement = () => {
     }
   };
 
-  const openForm = (service = null) => {
-    setFormData({
-      name: service?.name || '',
-      description: service?.description || '',
-      price: service?.price || '',
-      duration: service?.durationMinutes || '',
-      category: service?.category || '',
-      requirements: Array.isArray(service?.requirements) ? service.requirements : ['No hay requisitos necesarios'],
-      recommendations: Array.isArray(service?.recommendations) ? service.recommendations : ['No hay recomendaciones'],
-      warnings: Array.isArray(service?.warnings) ? service.warnings : ['No hay advertencias'],
-    });
-    setSelectedService(service);
+  const openForm = async (service) => {
+    if (service) {
+      try {
+        const response = await axios.get(`/services/${service.id}/details`);
+        if (response.data.success) {
+          const details = response.data.data;
+  
+          setFormData({
+            name: details.name || '',
+            description: details.description || '',
+            price: details.price || '',
+            duration: details.durationMinutes || '', // Corregido
+            category: details.category || '',
+            requirements: details.requirements || [''],
+            recommendations: details.recommendations || [''],
+            warnings: details.warnings || [''],
+          });
+        } else {
+          toast.error('No se pudieron cargar los detalles del servicio');
+        }
+      } catch (error) {
+        console.error('Error al obtener detalles del servicio:', error);
+        toast.error('Error al cargar los detalles del servicio');
+      }
+    } else {
+      // Si es para agregar un servicio nuevo
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        duration: '',
+        category: '',
+        requirements: [''],
+        recommendations: [''],
+        warnings: [''],
+      });
+    }
+  
+    setSelectedService(service || null);
     setIsEditing(!!service);
     setIsModalOpen(true);
   };
-
+  
+  
+  const validateFormData = (data) => {
+    return (
+      data.name.trim() !== '' &&
+      data.description.trim() !== '' &&
+      data.price > 0 &&
+      data.duration > 0 &&
+      data.category.trim() !== ''
+    );
+  };
+  
+  const handleEditService = async (e) => {
+    e.preventDefault();
+    if (!validateFormData(formData)) {
+      toast.error('Por favor, complete todos los campos requeridos.');
+      return;
+    }
+    try {
+      await axios.put(`/services/${selectedService.id}`, {
+        ...formData,
+        durationMinutes: formData.duration,
+      });
+      toast.success('Servicio actualizado exitosamente.');
+      loadServices();
+      closeForm();
+    } catch (error) {
+      console.error('Error editing service:', error);
+      const errorMessage =
+        error.response?.data?.message || 'Hubo un problema al intentar actualizar el servicio.';
+      toast.error(errorMessage);
+    }
+  };
+  
+  
   const closeForm = () => {
     setIsModalOpen(false);
     setSelectedService(null);
