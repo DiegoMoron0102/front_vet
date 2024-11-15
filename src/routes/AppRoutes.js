@@ -13,6 +13,8 @@ import MainLayout from '../components/Layout/MainLayout';
 import PetMedicalHistory from '../components/PetMedicalHistory';
 import { useAuth } from '../context/AuthContext';
 import MyPets from '../components/MyPets';
+import ServiceList from '../components/ServiceList';
+
 
 // Componente para rutas protegidas
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
@@ -99,6 +101,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute >
               <PetMedicalHistory />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/services"
+          element={
+            <PrivateRoute>
+              <ServiceList />
             </PrivateRoute>
           }
         />

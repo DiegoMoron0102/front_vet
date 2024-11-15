@@ -36,6 +36,7 @@ const roleRoutes = {
     //{ path: '/my-appointments', name: 'My Appointments', icon: CalendarIcon },
     { path: '/my-pets', name: 'My Pets-Appointments', icon: PawPrintIcon },
     { path: '/profile', name: 'My Profile', icon: UserIcon },
+    { path: '/services', name: 'Services', icon: PackageIcon },
   ]
 };
 
