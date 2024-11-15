@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import MyPets from '../components/MyPets';
 import ServiceList from '../components/ServiceList';
 import ServiceManagement from '../components/ServiceManagement';
-
+import ClientAppointments from '../components/ClientAppointments';
 
 // Componente para rutas protegidas
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
@@ -61,12 +61,7 @@ const AppRoutes = () => {
           </PrivateRoute>
         } />
 
-        {/* Ruta de citas del cliente - Solo accesible para CLIENTE */}
-        <Route path="/my-appointments" element={
-          <PrivateRoute allowedRoles={['CLIENTE']}>
-            <TodayAppointments />
-          </PrivateRoute>
-        } />
+        
         
         <Route path="/profile" element={
           <PrivateRoute>
@@ -81,6 +76,8 @@ const AppRoutes = () => {
         <Route path="/" element={
           <Navigate to="/dashboard" replace />
         } />
+
+
 
         <Route path="/clients" element={
           <PrivateRoute allowedRoles={['VETERINARIO', 'RECEPCIONISTA']}>
@@ -119,6 +116,15 @@ const AppRoutes = () => {
             <ServiceManagement />
           </PrivateRoute>
         } />
+
+        {/* Ruta de citas del cliente - Solo accesible para CLIENTE */}
+
+        <Route path="/my-appointments" element={
+          <PrivateRoute allowedRoles={['CLIENTE']}>
+            <ClientAppointments />
+          </PrivateRoute>
+        } />
+
 
         
 

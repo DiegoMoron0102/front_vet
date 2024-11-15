@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Table from './common/Table/Table';
+import Modal from './common/Modal/Modal';
 import axios from '../config/axios';
 import toast from 'react-hot-toast';
 import { Search, X } from 'lucide-react';
@@ -41,8 +42,10 @@ const ServiceList = () => {
     pageSize: 10,
     totalElements: 0,
     totalPages: 0,
-    last: false
+    last: false,
   });
+  const [selectedService, setSelectedService] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const searchTimeoutRef = useRef(null);
 
   // Función para cargar categorías
@@ -64,8 +67,6 @@ const ServiceList = () => {
   const loadServices = useCallback(async () => {
     try {
       setIsLoading(true);
-
-      // Construir los parámetros para la URL
       const params = {
         page: pagination.pageNumber,
         size: pagination.pageSize,
@@ -77,19 +78,19 @@ const ServiceList = () => {
 
       if (response?.data?.data?.content) {
         setServices(response.data.data.content);
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           totalElements: response.data.data.totalElements || 0,
           totalPages: response.data.data.totalPages || 0,
-          last: response.data.data.last || false
+          last: response.data.data.last || false,
         }));
       } else {
         setServices([]);
-        setPagination(prev => ({
+        setPagination((prev) => ({
           ...prev,
           totalElements: 0,
           totalPages: 0,
-          last: true
+          last: true,
         }));
       }
     } catch (error) {
@@ -124,8 +125,19 @@ const ServiceList = () => {
   // Cambia la categoría y reinicia la página
   const handleCategoryChange = (e) => {
     setCategory(e.target.value);
-    setPagination((prev) => ({ ...prev, pageNumber: 0 })); // Reinicia a la primera página
+    setPagination((prev) => ({ ...prev, pageNumber: 0 }));
     loadServices();
+  };
+
+  // Mostrar detalles en un modal
+  const handleViewDetails = (service) => {
+    setSelectedService(service);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedService(null);
+    setIsModalOpen(false);
   };
 
   // Cargar categorías y servicios al iniciar
@@ -139,7 +151,7 @@ const ServiceList = () => {
       <div className="mb-6 space-y-4">
         <h2 className="text-2xl font-bold text-gray-900">Servicios para Mascotas</h2>
         <div className="flex space-x-4 items-center">
-          <SearchBox 
+          <SearchBox
             searchTerm={searchTerm}
             onSearchChange={handleSearchChange}
             onClear={handleSearchClear}
@@ -151,19 +163,32 @@ const ServiceList = () => {
           >
             <option value="All">Todas las categorías</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Tabla de Servicios */}
       <Table
         columns={[
           { key: 'name', label: 'Nombre' },
           { key: 'category', label: 'Categoría' },
           { key: 'price', label: 'Precio', render: (row) => `$${row.price}` },
           { key: 'durationMinutes', label: 'Duración (min)' },
+          {
+            key: 'actions',
+            label: 'Acciones',
+            render: (row) => (
+              <button
+                onClick={() => handleViewDetails(row)}
+                className="px-3 py-1 bg-blue-500 text-white rounded"
+              >
+                Ver Detalles
+              </button>
+            ),
+          },
         ]}
         data={services}
         pagination={pagination}
@@ -171,11 +196,18 @@ const ServiceList = () => {
         isLoading={isLoading}
       />
 
-      {/* Mensajes de error */}
-      {isLoading && (
-        <div className="text-center mt-4">
-          <p className="text-gray-500">Cargando servicios...</p>
-        </div>
+      {isModalOpen && selectedService && (
+        <Modal isOpen={isModalOpen} onClose={closeModal} title="Detalles del Servicio">
+          <div>
+            <h3 className="text-xl font-bold">{selectedService.name}</h3>
+            <p><strong>Descripción:</strong> {selectedService.description}</p>
+            <p><strong>Precio:</strong> ${selectedService.price}</p>
+            <p><strong>Duración:</strong> {selectedService.durationMinutes} minutos</p>
+            <p><strong>Requisitos:</strong> {selectedService.requirements?.join(', ') || 'N/A'}</p>
+            <p><strong>Recomendaciones:</strong> {selectedService.recommendations?.join(', ') || 'N/A'}</p>
+            <p><strong>Advertencias:</strong> {selectedService.warnings?.join(', ') || 'N/A'}</p>
+          </div>
+        </Modal>
       )}
     </div>
   );

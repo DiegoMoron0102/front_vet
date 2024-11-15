@@ -3,14 +3,13 @@ import Table from './common/Table/Table';
 import axios from '../config/axios';
 import toast from 'react-hot-toast';
 import Modal from './common/Modal/Modal';
+import { Search, X } from 'lucide-react';
 
-// Componente SearchBox (lo definimos aquí para evitar el error)
+// Componente SearchBox
 const SearchBox = ({ searchTerm, onSearchChange, onClear }) => (
   <div className="relative w-full max-w-md">
     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m2.7-5.65a7.5 7.5 0 11-15 0 7.5 7.5 0 0115 0z" />
-      </svg>
+      <Search className="h-5 w-5 text-gray-400" />
     </div>
     <input
       type="text"
@@ -26,9 +25,7 @@ const SearchBox = ({ searchTerm, onSearchChange, onClear }) => (
         onClick={onClear}
         className="absolute inset-y-0 right-0 pr-3 flex items-center"
       >
-        <svg className="h-4 w-4 text-gray-400 hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <X className="h-4 w-4 text-gray-400 hover:text-gray-500" />
       </button>
     )}
   </div>
@@ -55,24 +52,14 @@ const ServiceManagement = () => {
     description: '',
     price: '',
     duration: '',
-    category: '', // Añadimos categoría en el estado inicial
+    category: '',
+    requirements: [],
+    recommendations: [],
+    warnings: [],
   });
   const searchTimeoutRef = useRef(null);
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const response = await axios.get('/services/categories');
-      if (response.data.success) {
-        setCategories(response.data.data);
-      } else {
-        toast.error('Error al cargar las categorías de servicios');
-      }
-    } catch (error) {
-      console.error('Error cargando categorías:', error);
-      toast.error('Error al cargar las categorías');
-    }
-  }, []);
-
+  // Función para cargar servicios
   const loadServices = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -108,10 +95,40 @@ const ServiceManagement = () => {
     }
   }, [pagination.pageNumber, pagination.pageSize, searchTerm, category]);
 
+  // Cargar categorías
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await axios.get('/services/categories');
+        if (response.data.success) {
+          setCategories(response.data.data);
+        } else {
+          toast.error('Error al cargar las categorías de servicios');
+        }
+      } catch (error) {
+        console.error('Error cargando categorías:', error);
+        toast.error('Error al cargar las categorías');
+      }
+    };
+    loadCategories();
+    loadServices(); // Llamamos a loadServices aquí para inicializar los datos
+  }, [loadServices]);
+
   const handleAddService = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/services', formData);
+      const data = {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        durationMinutes: formData.duration,
+        category: formData.category,
+        requirements: formData.requirements,
+        recommendations: formData.recommendations,
+        warnings: formData.warnings,
+      };
+
+      await axios.post('/services', data);  // POST request para agregar servicio
       toast.success('Servicio agregado exitosamente');
       loadServices();
       closeForm();
@@ -123,7 +140,18 @@ const ServiceManagement = () => {
   const handleEditService = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`/services/${selectedService.id}`, formData);
+      const data = {
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        durationMinutes: formData.duration,
+        category: formData.category,
+        requirements: formData.requirements,
+        recommendations: formData.recommendations,
+        warnings: formData.warnings,
+      };
+
+      await axios.put(`/services/${selectedService.id}`, data);  // PUT request para editar servicio
       toast.success('Servicio actualizado exitosamente');
       loadServices();
       closeForm();
@@ -134,7 +162,7 @@ const ServiceManagement = () => {
 
   const handleDeleteService = async (id) => {
     try {
-      await axios.delete(`/services/${id}`);
+      await axios.delete(`/services/${id}`); // DELETE request para eliminar servicio
       toast.success('Servicio eliminado exitosamente');
       loadServices();
     } catch (error) {
@@ -147,8 +175,11 @@ const ServiceManagement = () => {
       name: service?.name || '',
       description: service?.description || '',
       price: service?.price || '',
-      duration: service?.duration || '',
-      category: service?.category || '', // Añadir categoría en el estado inicial del formulario
+      duration: service?.durationMinutes || '',
+      category: service?.category || '',
+      requirements: Array.isArray(service?.requirements) ? service.requirements : ['No hay requisitos necesarios'],
+      recommendations: Array.isArray(service?.recommendations) ? service.recommendations : ['No hay recomendaciones'],
+      warnings: Array.isArray(service?.warnings) ? service.warnings : ['No hay advertencias'],
     });
     setSelectedService(service);
     setIsEditing(!!service);
@@ -171,7 +202,6 @@ const ServiceManagement = () => {
   const handleSearchClear = () => {
     setSearchTerm('');
     setPagination((prev) => ({ ...prev, pageNumber: 0 }));
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     loadServices();
   };
 
@@ -185,11 +215,6 @@ const ServiceManagement = () => {
     setPagination((prev) => ({ ...prev, pageNumber: 0 }));
     loadServices();
   };
-
-  useEffect(() => {
-    loadCategories();
-    loadServices();
-  }, [loadCategories, loadServices]);
 
   return (
     <div className="p-6">
@@ -216,67 +241,88 @@ const ServiceManagement = () => {
       </div>
 
       {/* Modal para agregar/editar servicios */}
-      <Modal isOpen={isModalOpen} onClose={closeForm} title={isEditing ? 'Editar Servicio' : 'Agregar Servicio'}>
-        <form onSubmit={isEditing ? handleEditService : handleAddService} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Nombre"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full p-2 border rounded"
-            required
-          />
-          <textarea
-            placeholder="Descripción"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full p-2 border rounded"
-            required
-          ></textarea>
-          <input
-            type="number"
-            placeholder="Precio"
-            value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="number"
-            placeholder="Duración (min)"
-            value={formData.duration}
-            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            className="w-full p-2 border rounded"
-            required
-          />
-          <select
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full p-2 border rounded"
-            required
-          >
-            <option value="">Selecciona una categoría</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-          <div className="flex space-x-2">
-            <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
-              {isEditing ? 'Actualizar' : 'Agregar'}
-            </button>
-            <button type="button" onClick={closeForm} className="px-4 py-2 bg-gray-300 rounded">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={closeForm} title={isEditing ? 'Editar Servicio' : 'Agregar Servicio'}>
+          <form onSubmit={isEditing ? handleEditService : handleAddService} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full p-2 border rounded"
+              required
+            />
+            <textarea
+              placeholder="Descripción"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Precio"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Duración (min)"
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+              className="w-full p-2 border rounded"
+              required
+            />
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full p-2 border rounded"
+              required
+            >
+              <option value="">Selecciona una categoría</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <textarea
+              placeholder="Requisitos (separa por comas)"
+              value={formData.requirements.join(', ')}
+              onChange={(e) => setFormData({ ...formData, requirements: e.target.value.split(',').map(item => item.trim()) })}
+              className="w-full p-2 border rounded"
+            />
+            <textarea
+              placeholder="Recomendaciones (separa por comas)"
+              value={formData.recommendations.join(', ')}
+              onChange={(e) => setFormData({ ...formData, recommendations: e.target.value.split(',').map(item => item.trim()) })}
+              className="w-full p-2 border rounded"
+            />
+            <textarea
+              placeholder="Advertencias (separa por comas)"
+              value={formData.warnings.join(', ')}
+              onChange={(e) => setFormData({ ...formData, warnings: e.target.value.split(',').map(item => item.trim()) })}
+              className="w-full p-2 border rounded"
+            />
+            <div className="flex space-x-2">
+              <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+                {isEditing ? 'Actualizar' : 'Agregar'}
+              </button>
+              <button type="button" onClick={closeForm} className="px-4 py-2 bg-gray-300 rounded">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
+      {/* Tabla de servicios */}
       <Table
         columns={[
           { key: 'name', label: 'Nombre' },
           { key: 'category', label: 'Categoría' },
           { key: 'price', label: 'Precio', render: (row) => `$${row.price}` },
-          { key: 'duration', label: 'Duración (min)' },
+          { key: 'durationMinutes', label: 'Duración (min)' },
           {
             key: 'actions',
             label: 'Acciones',

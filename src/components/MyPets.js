@@ -19,6 +19,7 @@ const MyPets = () => {
   const [notes, setNotes] = useState('');
   const navigate = useNavigate();
   const inputRef = useRef(null);
+  
 
   const { user } = useAuth();
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
