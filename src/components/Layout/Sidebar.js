@@ -37,7 +37,16 @@ const roleRoutes = {
     { path: '/my-pets', name: 'My Pets-Appointments', icon: PawPrintIcon },
     { path: '/profile', name: 'My Profile', icon: UserIcon },
     { path: '/services', name: 'Services', icon: PackageIcon },
-  ]
+  ],
+  ADMINISTRADOR: [
+    { path: '/dashboard', name: 'Dashboard', icon: HomeIcon },
+    { path: '/appointments', name: "Today's Appointments", icon: CalendarIcon },
+    { path: '/clients', name: 'Clients', icon: UsersIcon },
+    { path: '/pets', name: 'Pets', icon: PawPrintIcon },
+    { path: '/inventory', name: 'Inventory', icon: PackageIcon },
+    { path: '/profile', name: 'My Profile', icon: UserIcon },
+    { path : '/admin/services', name: 'Services', icon: PackageIcon },
+  ],
 };
 
 const Sidebar = () => {

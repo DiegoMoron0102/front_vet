@@ -14,6 +14,7 @@ import PetMedicalHistory from '../components/PetMedicalHistory';
 import { useAuth } from '../context/AuthContext';
 import MyPets from '../components/MyPets';
 import ServiceList from '../components/ServiceList';
+import ServiceManagement from '../components/ServiceManagement';
 
 
 // Componente para rutas protegidas
@@ -112,6 +113,14 @@ const AppRoutes = () => {
             </PrivateRoute>
           }
         />
+       {/* Ruta de gestión de servicios - Solo accesible para ADMIN */}
+        <Route path="/admin/services" element={
+          <PrivateRoute allowedRoles={['ADMINISTRADOR']}>
+            <ServiceManagement />
+          </PrivateRoute>
+        } />
+
+        
 
         {/* Ruta 404 */}
         <Route path="*" element={<Navigate to="/" replace />} />

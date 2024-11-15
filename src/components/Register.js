@@ -35,7 +35,7 @@ const Register = () => {
         .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, 'Solo se permiten letras'),
       phoneNumber: Yup.string()
         .required('El teléfono es requerido')
-        .matches(/^\d{10}$/, 'El teléfono debe tener exactamente 10 dígitos'),
+        .matches(/^\d{8}$/, 'El teléfono debe tener exactamente 10 dígitos'),
       password: Yup.string()
         .required('La contraseña es requerida')
         .min(6, 'La contraseña debe tener al menos 6 caracteres'),
