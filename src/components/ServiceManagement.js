@@ -61,43 +61,52 @@ const ServiceManagement = () => {
 
   const loadServices = useCallback(async () => {
     try {
-      setIsLoading(true);
-      const params = {
-        page: pagination.pageNumber,
-        size: pagination.pageSize,
-        searchTerm: searchTerm || null,
-        category: category !== 'All' ? category : null,
-      };
-  
-      const response = await axios.get('/services/list', { params });
-  
-      // Agregar el console.log para verificar la respuesta de la base de datos
-      console.log('Datos obtenidos de /services/list:', response.data);
-  
-      if (response?.data?.data?.content) {
-        setServices(response.data.data.content);
-        setPagination((prev) => ({
-          ...prev,
-          totalElements: response.data.data.totalElements || 0,
-          totalPages: response.data.data.totalPages || 0,
-          last: response.data.data.last || false,
-        }));
-      } else {
-        setServices([]);
-        setPagination((prev) => ({
-          ...prev,
-          totalElements: 0,
-          totalPages: 0,
-          last: true,
-        }));
-      }
+        setIsLoading(true);
+
+        // Construir la URL dinámica basada en los parámetros de búsqueda y filtrado
+        let url = `/services/list?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
+
+        if (searchTerm && category !== 'All') {
+            // Buscar por nombre y categoría
+            url += `&filterBy=name&filterValue=${searchTerm}&category=${category}`;
+        } else if (searchTerm) {
+            // Buscar solo por nombre
+            url += `&filterBy=name&filterValue=${searchTerm}`;
+        } else if (category !== 'All') {
+            // Buscar solo por categoría
+            url += `&category=${category}`;
+        }
+
+        const response = await axios.get(url);
+
+        // Verificar y actualizar los datos obtenidos
+        console.log('Datos obtenidos de /services/list:', response.data);
+
+        if (response?.data?.data?.content) {
+            setServices(response.data.data.content);
+            setPagination((prev) => ({
+                ...prev,
+                totalElements: response.data.data.totalElements || 0,
+                totalPages: response.data.data.totalPages || 0,
+                last: response.data.data.last || false,
+            }));
+        } else {
+            setServices([]);
+            setPagination((prev) => ({
+                ...prev,
+                totalElements: 0,
+                totalPages: 0,
+                last: true,
+            }));
+        }
     } catch (error) {
-      console.error('Error cargando servicios:', error);
-      toast.error('Error al cargar la lista de servicios');
+        console.error('Error cargando servicios:', error);
+        toast.error('Error al cargar la lista de servicios');
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  }, [pagination.pageNumber, pagination.pageSize, searchTerm, category]);
+}, [pagination.pageNumber, pagination.pageSize, searchTerm, category]);
+
   
   useEffect(() => {
     const loadCategories = async () => {

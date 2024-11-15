@@ -5,7 +5,6 @@ import axios from '../config/axios';
 import toast from 'react-hot-toast';
 import { Search, X } from 'lucide-react';
 
-// Componente SearchBox
 const SearchBox = ({ searchTerm, onSearchChange, onClear }) => (
   <div className="relative w-full max-w-md">
     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -48,33 +47,23 @@ const ServiceList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const searchTimeoutRef = useRef(null);
 
-  // Función para cargar categorías
-  const loadCategories = useCallback(async () => {
-    try {
-      const response = await axios.get('/services/categories');
-      if (response.data.success) {
-        setCategories(response.data.data);
-      } else {
-        toast.error('Error al cargar las categorías de servicios');
-      }
-    } catch (error) {
-      console.error('Error cargando categorías:', error);
-      toast.error('Error al cargar las categorías');
-    }
-  }, []);
-
-  // Función para cargar servicios
   const loadServices = useCallback(async () => {
     try {
       setIsLoading(true);
-      const params = {
-        page: pagination.pageNumber,
-        size: pagination.pageSize,
-        searchTerm: searchTerm || null,
-        category: category !== 'All' ? category : null,
-      };
+      let url = `/services/list?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
 
-      const response = await axios.get('/services/list', { params });
+      if (searchTerm && category !== 'All') {
+        // Buscar por nombre y categoría
+        url += `&filterBy=name&filterValue=${searchTerm}&category=${category}`;
+      } else if (searchTerm) {
+        // Buscar solo por nombre
+        url += `&filterBy=name&filterValue=${searchTerm}`;
+      } else if (category !== 'All') {
+        // Buscar solo por categoría
+        url += `&category=${category}`;
+      }
+
+      const response = await axios.get(url);
 
       if (response?.data?.data?.content) {
         setServices(response.data.data.content);
@@ -101,7 +90,6 @@ const ServiceList = () => {
     }
   }, [pagination.pageNumber, pagination.pageSize, searchTerm, category]);
 
-  // Maneja el cambio en la barra de búsqueda con debounce
   const handleSearchChange = (value) => {
     setSearchTerm(value);
     setPagination((prev) => ({ ...prev, pageNumber: 0 }));
@@ -112,24 +100,20 @@ const ServiceList = () => {
   const handleSearchClear = () => {
     setSearchTerm('');
     setPagination((prev) => ({ ...prev, pageNumber: 0 }));
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     loadServices();
   };
 
-  // Cambia la página al hacer clic en las flechas de paginación
   const handlePageChange = (newPage) => {
     setPagination((prev) => ({ ...prev, pageNumber: newPage }));
     loadServices();
   };
 
-  // Cambia la categoría y reinicia la página
   const handleCategoryChange = (e) => {
     setCategory(e.target.value);
     setPagination((prev) => ({ ...prev, pageNumber: 0 }));
     loadServices();
   };
 
-  // Mostrar detalles en un modal
   const handleViewDetails = async (service) => {
     try {
       const response = await axios.get(`/services/${service.id}/details`);
@@ -145,18 +129,29 @@ const ServiceList = () => {
       toast.error('Error al cargar los detalles del servicio');
     }
   };
-  
 
   const closeModal = () => {
     setSelectedService(null);
     setIsModalOpen(false);
   };
 
-  // Cargar categorías y servicios al iniciar
   useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await axios.get('/services/categories');
+        if (response.data.success) {
+          setCategories(response.data.data);
+        } else {
+          toast.error('Error al cargar las categorías de servicios');
+        }
+      } catch (error) {
+        console.error('Error cargando categorías:', error);
+        toast.error('Error al cargar las categorías');
+      }
+    };
     loadCategories();
     loadServices();
-  }, [loadCategories, loadServices]);
+  }, [loadServices]);
 
   return (
     <div className="p-6">
@@ -188,7 +183,7 @@ const ServiceList = () => {
           { key: 'name', label: 'Nombre' },
           { key: 'category', label: 'Categoría' },
           { key: 'price', label: 'Precio', render: (row) => `$${row.price}` },
-          { key: 'durationMinutes', label: 'Duración (min)' },
+          { key: 'description', label: 'Descripción' },
           {
             key: 'actions',
             label: 'Acciones',
@@ -208,9 +203,9 @@ const ServiceList = () => {
         isLoading={isLoading}
       />
 
-        {isModalOpen && selectedService && (
+      {isModalOpen && selectedService && (
         <Modal isOpen={isModalOpen} onClose={closeModal} title="Detalles del Servicio">
-            <div>
+          <div>
             <h3 className="text-xl font-bold">{selectedService.name}</h3>
             <p><strong>Descripción:</strong> {selectedService.description}</p>
             <p><strong>Precio:</strong> ${selectedService.price}</p>
@@ -218,9 +213,9 @@ const ServiceList = () => {
             <p><strong>Requisitos:</strong> {selectedService.requirements?.join(', ') || 'No especificados'}</p>
             <p><strong>Recomendaciones:</strong> {selectedService.recommendations?.join(', ') || 'No especificadas'}</p>
             <p><strong>Advertencias:</strong> {selectedService.warnings?.join(', ') || 'No especificadas'}</p>
-            </div>
+          </div>
         </Modal>
-        )}
+      )}
     </div>
   );
 };
