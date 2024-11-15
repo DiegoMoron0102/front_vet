@@ -78,7 +78,7 @@ const Login = () => {
 
         {/* Título */}
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Iniciar Sesión - SPRINT 4
+          Iniciar Sesión - SPRINT  4
         </h2>
 
         {/* Formulario */}
