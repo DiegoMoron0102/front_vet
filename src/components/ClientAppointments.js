@@ -49,14 +49,20 @@ const ClientAppointments = () => {
     }
   };
 
-  // Reprogramar una cita
   const handleRescheduleAppointment = async (e) => {
     e.preventDefault();
     try {
-      const newDateTime = `${newDate}T${newTime}`;
+      // Crear la fecha completa usando la fecha y hora seleccionadas
+      const selectedDateTime = new Date(`${newDate}T${newTime}`);
+      
+      
+  
+      
+  
+      // Realizar la solicitud al backend
       const response = await axiosInstance.post(
         `/client/appointments/${selectedAppointment.id}/reschedule`,
-        { newDate: newDateTime, reason }
+        { newDate: selectedDateTime, reason }
       );
       if (response.data.success) {
         toast.success('Cita reprogramada exitosamente');
@@ -70,6 +76,7 @@ const ClientAppointments = () => {
       toast.error(error.response?.data?.error?.message || 'Error desconocido');
     }
   };
+  
 
   const handleCloseModal = () => {
     setIsRescheduleModalOpen(false);
@@ -92,29 +99,34 @@ const ClientAppointments = () => {
       </p>
       <p>Motivo: {appointment.reason}</p>
       <p>Veterinario: {appointment.veterinarianName}</p>
-      <div className="flex space-x-4 mt-4">
-        {appointment.canCancel && (
-          <button
-            onClick={() => handleCancelAppointment(appointment.id)}
-            className="px-4 py-2 bg-red-600 text-white rounded-md"
-          >
-            Cancelar
-          </button>
-        )}
-        {appointment.canReschedule && (
-          <button
-            onClick={() => {
-              setSelectedAppointment(appointment);
-              setIsRescheduleModalOpen(true);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md"
-          >
-            Reprogramar
-          </button>
-        )}
-      </div>
+      {appointment.status === 'CANCELLED' ? (
+        <p className="text-red-600 font-bold mt-4">CANCELADO</p>
+      ) : (
+        <div className="flex space-x-4 mt-4">
+          {appointment.canCancel && (
+            <button
+              onClick={() => handleCancelAppointment(appointment.id)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md"
+            >
+              Cancelar
+            </button>
+          )}
+          {appointment.canReschedule && (
+            <button
+              onClick={() => {
+                setSelectedAppointment(appointment);
+                setIsRescheduleModalOpen(true);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md"
+            >
+              Reprogramar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
+
 
   return (
     <div className="p-6">
