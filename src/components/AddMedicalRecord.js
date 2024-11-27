@@ -9,6 +9,7 @@ const AddMedicalRecord = () => {
   const [servicesByCategory, setServicesByCategory] = useState({});
   const [selectedServices, setSelectedServices] = useState([]);
   const navigate = useNavigate();
+  const [favoriteIds, setFavoriteIds] = useState([]); // Estado para favoritos
   const [formData, setFormData] = useState({
     motivoConsulta: '',
     diagnostico: '',
@@ -16,18 +17,34 @@ const AddMedicalRecord = () => {
     observaciones: '',
   });
 
-  // Fetch services by category
   useEffect(() => {
     const fetchServices = async () => {
       try {
+        // Obtener servicios por categoría
         const response = await axiosInstance.get('/services/by-category');
-        if (response.data.success) {
-          setServicesByCategory(response.data.data.servicesByCategory);
-        } else {
-          toast.error('Error al cargar los servicios.');
-        }
+        const servicesData = response.data.data.servicesByCategory || {};
+
+        // Obtener favoritos del veterinario
+        const favoritesResponse = await axiosInstance.get('/favorites');
+        const favoriteServices = favoritesResponse.data.data || [];
+        const favoriteIdsList = favoriteServices
+          .filter((item) => item.itemType === 'VETERINARY_SERVICE')
+          .map((item) => item.itemId);
+
+        setFavoriteIds(favoriteIdsList); // Guardar favoritos en el estado
+
+        // Ordenar servicios: favoritos primero
+        const sortedServicesByCategory = {};
+        Object.keys(servicesData).forEach((category) => {
+          const services = servicesData[category];
+          const favorites = services.filter((service) => favoriteIdsList.includes(service.id));
+          const others = services.filter((service) => !favoriteIdsList.includes(service.id));
+          sortedServicesByCategory[category] = [...favorites, ...others];
+        });
+
+        setServicesByCategory(sortedServicesByCategory);
       } catch (error) {
-        console.error('Error al cargar los servicios:', error);
+        console.error('Error al cargar servicios:', error);
         toast.error('No se pudo cargar la lista de servicios.');
       }
     };
@@ -153,7 +170,11 @@ const AddMedicalRecord = () => {
                   />
                   <label htmlFor={`service-${service.id}`} className="flex-grow">
                     {service.name} - ${service.price}
+                    {favoriteIds.includes(service.id) && (
+                      <span className="text-red-500 font-semibold ml-2">(Favorito)</span>
+                    )}
                   </label>
+
                   <input
                     type="number"
                     placeholder="Precio personalizado"
