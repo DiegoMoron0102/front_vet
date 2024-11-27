@@ -3,6 +3,7 @@ import Table from './common/Table/Table';
 import Modal from './common/Modal/Modal';
 import axios from '../config/axios';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext'; // Contexto de autenticación
 import { Search, X, Heart } from 'lucide-react'; // Importar íconos para favoritos
 
 const SearchBox = ({ searchTerm, onSearchChange, onClear }) => (
@@ -37,6 +38,10 @@ const ServiceList = () => {
   const [category, setCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [showFavorites, setShowFavorites] = useState(false);
+  const { user } = useAuth(); 
+
+  // Verificar si el usuario es veterinario
+  const isVeterinario = user?.roles?.includes('VETERINARIO');
 
   const [pagination, setPagination] = useState({
     pageNumber: 0,
@@ -53,36 +58,37 @@ const ServiceList = () => {
     try {
       setIsLoading(true);
   
-      if (showFavorites) {
+      // Si se seleccionan favoritos y el usuario no es veterinario, abortar
+      if (showFavorites && !isVeterinario) {
+        console.warn('El usuario no tiene permisos para ver favoritos');
+        setServices([]); // Asegúrate de limpiar los servicios
+        setPagination((prev) => ({
+          ...prev,
+          totalElements: 0,
+          totalPages: 0,
+        }));
+        return;
+      }
+  
+      if (showFavorites && isVeterinario) {
         // Cargar solo favoritos
         const favoritesResponse = await axios.get('/favorites');
-        const favoriteServices = favoritesResponse.data.data.favorites || [];
-        const favoriteServiceIds = favoriteServices
+        const favoriteServices = favoritesResponse.data.data || [];
+        const servicesWithFavorites = favoriteServices
           .filter((item) => item.itemType === 'VETERINARY_SERVICE')
-          .map((item) => item.itemId);
-  
-        // Si no hay favoritos, no cargar servicios
-        if (favoriteServiceIds.length === 0) {
-          setServices([]);
-          setPagination((prev) => ({ ...prev, totalElements: 0, totalPages: 0 }));
-        } else {
-          // Filtrar servicios por IDs favoritos
-          const response = await axios.get(`/services/listByIds`, {
-            params: { ids: favoriteServiceIds.join(',') },
-          });
-          const servicesData = response?.data?.data?.content || [];
-          setServices(
-            servicesData.map((service) => ({
-              ...service,
-              favorito: true, // Todos son favoritos en este caso
-            }))
-          );
-          setPagination((prev) => ({
-            ...prev,
-            totalElements: servicesData.length,
-            totalPages: 1, // Solo una página de favoritos
+          .map((item) => ({
+            id: item.itemId,
+            name: item.itemName,
+            price: item.price,
+            favorito: true, // Todos los servicios son favoritos aquí
           }));
-        }
+  
+        setServices(servicesWithFavorites);
+        setPagination((prev) => ({
+          ...prev,
+          totalElements: servicesWithFavorites.length,
+          totalPages: 1, // Solo una página para favoritos
+        }));
       } else {
         // Cargar todos los servicios
         let url = `/services/list?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
@@ -97,11 +103,14 @@ const ServiceList = () => {
   
         const response = await axios.get(url);
         const servicesData = response?.data?.data?.content || [];
-        const favoritesResponse = await axios.get('/favorites');
-        const favoriteServices = favoritesResponse.data.data.favorites || [];
-        const favoriteServiceIds = favoriteServices
-          .filter((item) => item.itemType === 'VETERINARY_SERVICE')
-          .map((item) => item.itemId);
+  
+        // Obtener favoritos si el usuario es veterinario
+        let favoriteServiceIds = [];
+        if (isVeterinario) {
+          const favoritesResponse = await axios.get('/favorites');
+          const favoriteServices = favoritesResponse.data.data || [];
+          favoriteServiceIds = favoriteServices.map((item) => item.itemId);
+        }
   
         const servicesWithFavorites = servicesData.map((service) => ({
           ...service,
@@ -122,27 +131,34 @@ const ServiceList = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [pagination.pageNumber, pagination.pageSize, searchTerm, category, showFavorites]);
-  
+  }, [pagination.pageNumber, pagination.pageSize, searchTerm, category, showFavorites, isVeterinario]);
   
   const toggleFavorite = async (serviceId) => {
+    if (!isVeterinario) return; // Solo los veterinarios pueden agregar o quitar favoritos
+
     try {
       const response = await axios.post('/favorites/toggle', {
         itemId: serviceId,
         itemType: 'VETERINARY_SERVICE',
       });
       const isFavorite = response.data.data !== null;
+  
       setServices((prev) =>
         prev.map((service) =>
           service.id === serviceId ? { ...service, favorito: isFavorite } : service
         )
       );
+  
       toast.success(isFavorite ? 'Marcado como favorito' : 'Removido de favoritos');
     } catch (error) {
       console.error('Error al alternar favorito:', error);
       toast.error('Error al actualizar favorito');
     }
   };
+  
+  
+
+  
   
 
   const handleSearchChange = (value) => {
@@ -191,6 +207,7 @@ const ServiceList = () => {
   };
 
   useEffect(() => {
+    
     const loadCategories = async () => {
       try {
         const response = await axios.get('/services/categories');
@@ -204,9 +221,11 @@ const ServiceList = () => {
         toast.error('Error al cargar las categorías');
       }
     };
+
+    
     loadCategories();
     loadServices();
-  }, [loadServices, showFavorites]);
+  }, [loadServices]);
   
 
   return (
@@ -231,12 +250,14 @@ const ServiceList = () => {
               </option>
             ))}
           </select>
-          <button
-            onClick={() => setShowFavorites((prev) => !prev)}
-            className={`px-4 py-2 rounded ${showFavorites ? 'bg-purple-500 text-white' : 'bg-gray-300 text-black'}`}
-          >
-            {showFavorites ? 'Ver Todos' : 'Ver Favoritos'}
-          </button>
+          {isVeterinario && (
+            <button
+              onClick={() => setShowFavorites((prev) => !prev)}
+              className={`px-4 py-2 rounded ${showFavorites ? 'bg-purple-500 text-white' : 'bg-gray-300 text-black'}`}
+            >
+              {showFavorites ? 'Ver Todos' : 'Ver Favoritos'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -246,15 +267,19 @@ const ServiceList = () => {
           { key: 'category', label: 'Categoría' },
           { key: 'price', label: 'Precio', render: (row) => `$${row.price}` },
           { key: 'description', label: 'Descripción' },
-          {
-            key: 'favorite',
-            label: 'Favorito',
-            render: (row) => (
-              <button onClick={() => toggleFavorite(row.id)}>
-                <Heart className={row.favorito ? 'text-red-500 fill-current' : ''} />
-              </button>
-            ),
-          },          
+          ...(isVeterinario
+            ? [
+                {
+                  key: 'favorite',
+                  label: 'Favorito',
+                  render: (row) => (
+                    <button onClick={() => toggleFavorite(row.id)}>
+                      <Heart className={row.favorito ? 'text-red-500 fill-current' : ''} />
+                    </button>
+                  ),
+                },
+              ]
+            : []),    
           {
             key: 'actions',
             label: 'Acciones',
