@@ -74,26 +74,35 @@ const PaymentHistory = () => {
     }
   }, [filters]);
 
-  // Función para cargar resumen de pagos
+  const fetchPaymentSummary = async (startDate, endDate) => {
+    const params = { fechaInicio: startDate, fechaFin: endDate };
+    return axios.get('/payment-history/summary', { params });
+  };
+  
   const loadSummary = useCallback(async () => {
     if (filters.startDate && filters.endDate) {
       try {
-        const params = {
-          fechaInicio: filters.startDate.toISOString().split('T')[0],
-          fechaFin: filters.endDate.toISOString().split('T')[0],
+        const response = await fetchPaymentSummary(
+          filters.startDate.toISOString().split('T')[0],
+          filters.endDate.toISOString().split('T')[0]
+        );
+  
+        const summaryData = response.data.data || {
+          totalGastado: 0,
+          gastosPorMascota: {},
+          gastosPorServicio: {},
         };
   
-        const response = await axios.get('/payment-history/summary', { params });
-  
-        // Actualizamos el estado del resumen con los datos recibidos
-        setSummary(response.data.data || { totalMonto: 0, totalServicios: 0 });
+        // Actualizar el estado con los datos del resumen
+        setSummary({
+          totalGastado: summaryData.totalGastado || 0,
+          gastosPorMascota: summaryData.gastosPorMascota || {},
+          gastosPorServicio: summaryData.gastosPorServicio || {},
+        });
       } catch (error) {
-        toast.error('Error al cargar el resumen de pagos');
-        console.error('Error al cargar el resumen:', error);
+        console.error("Error al cargar el resumen de pagos:", error);
+        setSummary({ totalGastado: 0, gastosPorMascota: {}, gastosPorServicio: {} });
       }
-    } else {
-      // Si no hay fechas, dejamos el resumen vacío
-      setSummary(null);
     }
   }, [filters]);
   
@@ -204,16 +213,40 @@ const PaymentHistory = () => {
       {/* Resumen */}
       {summary ? (
         <div className="p-4 bg-gray-50 rounded shadow">
-            <h3 className="text-lg font-medium">Resumen de Pagos</h3>
-            <p><strong>Total Pagado:</strong> ${summary.totalMonto ? summary.totalMonto.toFixed(2) : '0.00'}</p>
-            <p><strong>Total Servicios:</strong> {summary.totalServicios ?? '0'}</p>
-        </div>
-        ) : (
-        <div className="text-center text-gray-500">
-            No hay datos disponibles para el resumen.
-        </div>
-        )}
+          <h3 className="text-lg font-medium mb-2">Resumen de Pagos</h3>
+          <p><strong>Total Pagado:</strong> ${summary.totalGastado.toFixed(2)}</p>
 
+          {Object.keys(summary.gastosPorMascota).length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-md font-medium">Gastos por Mascota:</h4>
+              <ul className="list-disc list-inside">
+                {Object.entries(summary.gastosPorMascota).map(([mascotaId, monto]) => (
+                  <li key={mascotaId}>
+                    {mascotaId}: ${monto.toFixed(2)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {Object.keys(summary.gastosPorServicio).length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-md font-medium">Gastos por Servicio:</h4>
+              <ul className="list-disc list-inside">
+                {Object.entries(summary.gastosPorServicio).map(([servicio, monto]) => (
+                  <li key={servicio}>
+                    {servicio}: ${monto.toFixed(2)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center text-gray-500">
+          No hay datos disponibles para el resumen.
+        </div>
+      )}
 
     </div>
   );

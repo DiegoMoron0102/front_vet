@@ -19,7 +19,10 @@ const MyPets = () => {
   const [notes, setNotes] = useState('');
   const navigate = useNavigate();
   const inputRef = useRef(null);
-  
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [selectedPetHistory, setSelectedPetHistory] = useState(null);
+
 
   const { user } = useAuth();
   const [isSchedulingModalOpen, setIsSchedulingModalOpen] = useState(false);
@@ -46,6 +49,25 @@ const MyPets = () => {
     }
   }, [isAddModalOpen, isEditModalOpen]);
   
+  const loadPaymentHistory = async (petId) => {
+    try {
+      const token = authService.getToken();
+      const response = await axios.get(`http://localhost:8080/api/payment-history`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { petId },
+      });
+      if (response.data.success) {
+        setPaymentHistory(response.data.data.content);
+        setSelectedPetHistory(petId);
+        setIsHistoryModalOpen(true);
+      } else {
+        toast.error('No se encontró historial de pagos para esta mascota');
+      }
+    } catch (error) {
+      console.error('Error al cargar el historial de pagos:', error);
+      toast.error('Error al cargar el historial de pagos');
+    }
+  };
   
   
   const loadVeterinarians = async () => {
@@ -206,6 +228,13 @@ const MyPets = () => {
           Agendar Cita
         </button>
         <button
+          onClick={() => loadPaymentHistory(pet.id)}
+          className="w-full px-4 py-2 bg-green-100 text-green-700 rounded-md"
+        >
+          Ver Historial de Pagos
+        </button>
+
+        <button
           onClick={() => openEditModal(pet)}
           className="w-full px-4 py-2 bg-yellow-100 text-yellow-700 rounded-md"
         >
@@ -214,6 +243,46 @@ const MyPets = () => {
       </div>
     </div>
   );
+
+  const HistoryModal = () => (
+    <Modal
+      isOpen={isHistoryModalOpen}
+      onClose={() => setIsHistoryModalOpen(false)}
+      title={`Historial de Pagos de ${pets.find((p) => p.id === selectedPetHistory)?.name}`}
+    >
+      {paymentHistory.length > 0 ? (
+        <div className="overflow-y-auto max-h-96">
+          <table className="min-w-full border border-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2">Fecha</th>
+                <th className="px-4 py-2">Servicios</th>
+                <th className="px-4 py-2">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentHistory.map((payment) => (
+                <tr key={payment.id} className="border-t">
+                  <td className="px-4 py-2">{new Date(payment.fecha).toLocaleString()}</td>
+                  <td className="px-4 py-2">
+                    {payment.serviciosRealizados.map((service, index) => (
+                      <div key={index}>
+                        {service.nombre} - ${service.precioBase}
+                      </div>
+                    ))}
+                  </td>
+                  <td className="px-4 py-2">${payment.montoTotal}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-gray-500">No se encontraron pagos para esta mascota.</p>
+      )}
+    </Modal>
+  );
+  
 
   // Modal para agendar cita
   const SchedulingModal = () => (
@@ -419,6 +488,8 @@ const MyPets = () => {
         </form>
       </Modal>
       <SchedulingModal />
+      <HistoryModal />
+
     </div>
   );
 };
