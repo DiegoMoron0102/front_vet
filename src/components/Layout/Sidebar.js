@@ -9,8 +9,11 @@ import {
   PackageIcon,
   UserCogIcon,
   UserIcon,
-  LogOutIcon 
+  LogOutIcon,
+  CreditCardIcon
 } from 'lucide-react';
+
+
 
 // Mapeo de rutas por rol
 const roleRoutes = {
@@ -22,6 +25,8 @@ const roleRoutes = {
     { path: '/inventory', name: 'Inventory', icon: PackageIcon },
     { path: '/user-management', name: 'User Management', icon: UserCogIcon },
     { path: '/profile', name: 'My Profile', icon: UserIcon },
+    { path: '/services', name: 'Services', icon: PackageIcon },
+
   ],
   RECEPCIONISTA: [
     { path: '/dashboard', name: 'Dashboard', icon: HomeIcon },
@@ -38,6 +43,7 @@ const roleRoutes = {
     { path: '/profile', name: 'My Profile', icon: UserIcon },
     { path: '/services', name: 'Services', icon: PackageIcon },
     { path: '/my-appointments', name: "Today's Appointments", icon: CalendarIcon },
+    { path: '/payment-history', name: 'Payment History', icon: CreditCardIcon },
   ],
   ADMINISTRADOR: [
     { path: '/dashboard', name: 'Dashboard', icon: HomeIcon },
@@ -47,6 +53,7 @@ const roleRoutes = {
     { path: '/inventory', name: 'Inventory', icon: PackageIcon },
     { path: '/profile', name: 'My Profile', icon: UserIcon },
     { path : '/admin/services', name: 'Services', icon: PackageIcon },
+    { path: '/reports/services', name: 'Service Reports', icon: PackageIcon }, // NUEVA RUTA
   ],
 };
 

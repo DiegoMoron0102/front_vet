@@ -3,7 +3,7 @@ import Table from './common/Table/Table';
 import Modal from './common/Modal/Modal';
 import axios from '../config/axios';
 import toast from 'react-hot-toast';
-import { Search, X } from 'lucide-react';
+import { Search, X, Heart } from 'lucide-react'; // Importar íconos para favoritos
 
 const SearchBox = ({ searchTerm, onSearchChange, onClear }) => (
   <div className="relative w-full max-w-md">
@@ -36,6 +36,8 @@ const ServiceList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [category, setCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [showFavorites, setShowFavorites] = useState(false);
+
   const [pagination, setPagination] = useState({
     pageNumber: 0,
     pageSize: 10,
@@ -50,36 +52,68 @@ const ServiceList = () => {
   const loadServices = useCallback(async () => {
     try {
       setIsLoading(true);
-      let url = `/services/list?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
-
-      if (searchTerm && category !== 'All') {
-        // Buscar por nombre y categoría
-        url += `&filterBy=name&filterValue=${searchTerm}&category=${category}`;
-      } else if (searchTerm) {
-        // Buscar solo por nombre
-        url += `&filterBy=name&filterValue=${searchTerm}`;
-      } else if (category !== 'All') {
-        // Buscar solo por categoría
-        url += `&category=${category}`;
-      }
-
-      const response = await axios.get(url);
-
-      if (response?.data?.data?.content) {
-        setServices(response.data.data.content);
+  
+      if (showFavorites) {
+        // Cargar solo favoritos
+        const favoritesResponse = await axios.get('/favorites');
+        const favoriteServices = favoritesResponse.data.data.favorites || [];
+        const favoriteServiceIds = favoriteServices
+          .filter((item) => item.itemType === 'VETERINARY_SERVICE')
+          .map((item) => item.itemId);
+  
+        // Si no hay favoritos, no cargar servicios
+        if (favoriteServiceIds.length === 0) {
+          setServices([]);
+          setPagination((prev) => ({ ...prev, totalElements: 0, totalPages: 0 }));
+        } else {
+          // Filtrar servicios por IDs favoritos
+          const response = await axios.get(`/services/listByIds`, {
+            params: { ids: favoriteServiceIds.join(',') },
+          });
+          const servicesData = response?.data?.data?.content || [];
+          setServices(
+            servicesData.map((service) => ({
+              ...service,
+              favorito: true, // Todos son favoritos en este caso
+            }))
+          );
+          setPagination((prev) => ({
+            ...prev,
+            totalElements: servicesData.length,
+            totalPages: 1, // Solo una página de favoritos
+          }));
+        }
+      } else {
+        // Cargar todos los servicios
+        let url = `/services/list?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
+  
+        if (searchTerm && category !== 'All') {
+          url += `&filterBy=name&filterValue=${searchTerm}&category=${category}`;
+        } else if (searchTerm) {
+          url += `&filterBy=name&filterValue=${searchTerm}`;
+        } else if (category !== 'All') {
+          url += `&category=${category}`;
+        }
+  
+        const response = await axios.get(url);
+        const servicesData = response?.data?.data?.content || [];
+        const favoritesResponse = await axios.get('/favorites');
+        const favoriteServices = favoritesResponse.data.data.favorites || [];
+        const favoriteServiceIds = favoriteServices
+          .filter((item) => item.itemType === 'VETERINARY_SERVICE')
+          .map((item) => item.itemId);
+  
+        const servicesWithFavorites = servicesData.map((service) => ({
+          ...service,
+          favorito: favoriteServiceIds.includes(service.id),
+        }));
+  
+        setServices(servicesWithFavorites);
         setPagination((prev) => ({
           ...prev,
           totalElements: response.data.data.totalElements || 0,
           totalPages: response.data.data.totalPages || 0,
           last: response.data.data.last || false,
-        }));
-      } else {
-        setServices([]);
-        setPagination((prev) => ({
-          ...prev,
-          totalElements: 0,
-          totalPages: 0,
-          last: true,
         }));
       }
     } catch (error) {
@@ -88,7 +122,28 @@ const ServiceList = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [pagination.pageNumber, pagination.pageSize, searchTerm, category]);
+  }, [pagination.pageNumber, pagination.pageSize, searchTerm, category, showFavorites]);
+  
+  
+  const toggleFavorite = async (serviceId) => {
+    try {
+      const response = await axios.post('/favorites/toggle', {
+        itemId: serviceId,
+        itemType: 'VETERINARY_SERVICE',
+      });
+      const isFavorite = response.data.data !== null;
+      setServices((prev) =>
+        prev.map((service) =>
+          service.id === serviceId ? { ...service, favorito: isFavorite } : service
+        )
+      );
+      toast.success(isFavorite ? 'Marcado como favorito' : 'Removido de favoritos');
+    } catch (error) {
+      console.error('Error al alternar favorito:', error);
+      toast.error('Error al actualizar favorito');
+    }
+  };
+  
 
   const handleSearchChange = (value) => {
     setSearchTerm(value);
@@ -151,7 +206,8 @@ const ServiceList = () => {
     };
     loadCategories();
     loadServices();
-  }, [loadServices]);
+  }, [loadServices, showFavorites]);
+  
 
   return (
     <div className="p-6">
@@ -175,6 +231,12 @@ const ServiceList = () => {
               </option>
             ))}
           </select>
+          <button
+            onClick={() => setShowFavorites((prev) => !prev)}
+            className={`px-4 py-2 rounded ${showFavorites ? 'bg-purple-500 text-white' : 'bg-gray-300 text-black'}`}
+          >
+            {showFavorites ? 'Ver Todos' : 'Ver Favoritos'}
+          </button>
         </div>
       </div>
 
@@ -184,6 +246,15 @@ const ServiceList = () => {
           { key: 'category', label: 'Categoría' },
           { key: 'price', label: 'Precio', render: (row) => `$${row.price}` },
           { key: 'description', label: 'Descripción' },
+          {
+            key: 'favorite',
+            label: 'Favorito',
+            render: (row) => (
+              <button onClick={() => toggleFavorite(row.id)}>
+                <Heart className={row.favorito ? 'text-red-500 fill-current' : ''} />
+              </button>
+            ),
+          },          
           {
             key: 'actions',
             label: 'Acciones',
@@ -209,10 +280,6 @@ const ServiceList = () => {
             <h3 className="text-xl font-bold">{selectedService.name}</h3>
             <p><strong>Descripción:</strong> {selectedService.description}</p>
             <p><strong>Precio:</strong> ${selectedService.price}</p>
-            <p><strong>Duración:</strong> {selectedService.durationMinutes} minutos</p>
-            <p><strong>Requisitos:</strong> {selectedService.requirements?.join(', ') || 'No especificados'}</p>
-            <p><strong>Recomendaciones:</strong> {selectedService.recommendations?.join(', ') || 'No especificadas'}</p>
-            <p><strong>Advertencias:</strong> {selectedService.warnings?.join(', ') || 'No especificadas'}</p>
           </div>
         </Modal>
       )}

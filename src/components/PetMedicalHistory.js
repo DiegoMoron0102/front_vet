@@ -20,9 +20,13 @@ const PetMedicalHistory = () => {
     try {
       setIsLoading(true);
       const response = await axiosInstance.get(`/historial-clinico/mascota/${petId}`);
+      console.log('Datos recibidos del backend:', response.data);
       
       if (response.data.success) {
-        setHistorial(response.data.data);
+        setHistorial(response.data.data.map(record => ({
+          ...record,
+          serviciosRealizados: record.serviciosRealizados || [],
+        })));
         if (response.data.data.length > 0) {
           setPetName(response.data.data[0].petName);
         }
@@ -34,12 +38,13 @@ const PetMedicalHistory = () => {
       setIsLoading(false);
     }
   }, [petId]);
+  
+  
 
   useEffect(() => {
     loadHistorial();
   }, [loadHistorial]);
 
-  // Modal de detalles
   const RecordDetailsModal = () => (
     <Modal
       isOpen={isModalOpen}
@@ -47,38 +52,63 @@ const PetMedicalHistory = () => {
       title="Detalles de la Consulta"
     >
       <div className="space-y-6 max-w-2xl">
+        {/* Detalles básicos */}
         <div>
           <h4 className="text-sm font-medium text-gray-500">Fecha de Visita</h4>
           <p className="mt-1">{format(new Date(selectedRecord.fechaVisita), 'dd/MM/yyyy HH:mm')}</p>
         </div>
-
+  
         <div>
           <h4 className="text-sm font-medium text-gray-500">Veterinario</h4>
           <p className="mt-1">{selectedRecord.veterinarianName}</p>
         </div>
-
+  
         <div>
           <h4 className="text-sm font-medium text-gray-500">Motivo de Consulta</h4>
           <p className="mt-1">{selectedRecord.motivoConsulta}</p>
         </div>
-
+  
         <div>
           <h4 className="text-sm font-medium text-gray-500">Diagnóstico</h4>
           <p className="mt-1">{selectedRecord.diagnostico}</p>
         </div>
-
+  
         <div>
           <h4 className="text-sm font-medium text-gray-500">Tratamiento</h4>
           <p className="mt-1">{selectedRecord.tratamiento}</p>
         </div>
-
+  
         {selectedRecord.observaciones && (
           <div>
             <h4 className="text-sm font-medium text-gray-500">Observaciones</h4>
             <p className="mt-1">{selectedRecord.observaciones}</p>
           </div>
         )}
-
+  
+        {/* Servicios realizados */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-500">Servicios Realizados</h4>
+          <ul className="mt-2 space-y-2">
+            {selectedRecord.serviciosRealizados.map((servicio, index) => (
+              <li key={index} className="border-b border-gray-200 pb-2">
+                <div className="flex justify-between items-center">
+                  {/* Mostrar el nombre del servicio */}
+                  <p className="text-sm text-gray-700 font-medium">{servicio.nombreServicio}</p>
+                  {/* Mostrar el precio personalizado o el precio base */}
+                  <p className="text-sm text-gray-500">
+                    ${servicio.precioPersonalizado || servicio.precioBase || 'No especificado'}
+                  </p>
+                </div>
+                {/* Mostrar las notas, si existen */}
+                {servicio.notas && (
+                  <p className="mt-1 text-sm text-gray-500">Notas: {servicio.notas}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+  
+        {/* Botón para cerrar */}
         <button
           onClick={() => setIsModalOpen(false)}
           className="w-full mt-6 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
@@ -88,6 +118,8 @@ const PetMedicalHistory = () => {
       </div>
     </Modal>
   );
+  
+  
 
   return (
     <div className="p-6">

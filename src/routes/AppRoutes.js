@@ -16,6 +16,11 @@ import MyPets from '../components/MyPets';
 import ServiceList from '../components/ServiceList';
 import ServiceManagement from '../components/ServiceManagement';
 import ClientAppointments from '../components/ClientAppointments';
+import AddMedicalRecord from '../components/AddMedicalRecord';
+import ServiceReports from '../components/ServiceReports';
+import PaymentHistory from '../components/PaymentHistory';
+import PaymentDetails from '../components/PaymentDetails';
+
 
 // Componente para rutas protegidas
 const PrivateRoute = ({ children, allowedRoles = [] }) => {
@@ -122,6 +127,29 @@ const AppRoutes = () => {
         <Route path="/my-appointments" element={
           <PrivateRoute allowedRoles={['CLIENTE']}>
             <ClientAppointments />
+          </PrivateRoute>
+        } />
+        
+        <Route path="/historial-clinico/mascota/:petId" element={
+          <PrivateRoute allowedRoles={['VETERINARIO']}>
+            <AddMedicalRecord />
+          </PrivateRoute>
+        } />
+
+        <Route path="/reports/services" element={
+          <PrivateRoute allowedRoles={['ADMINISTRADOR']}>
+            <ServiceReports />
+          </PrivateRoute>
+        } />
+
+        <Route path="/payment-history" element={
+          <PrivateRoute allowedRoles={['CLIENTE']}>
+            <PaymentHistory />
+          </PrivateRoute>
+        } />
+        <Route path="/payment-history/:paymentId" element={
+          <PrivateRoute allowedRoles={['CLIENTE']}>
+            <PaymentDetails />
           </PrivateRoute>
         } />
 

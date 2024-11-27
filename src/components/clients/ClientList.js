@@ -7,9 +7,7 @@ import petService from '../../services/petService';
 import toast from 'react-hot-toast';
 import Modal from '../common/Modal/Modal';
 import ScheduleAppointment from '../ScheduleAppointment';
-import AddMedicalRecord from '../AddMedicalRecord';
 import { Search, X, Calendar, Clock, PlusCircle } from 'lucide-react'; 
-
 
 // Componente SearchBox separado
 const SearchBox = ({ searchTerm, onSearchChange, onClear }) => (
@@ -46,8 +44,6 @@ const ClientList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const searchTimeoutRef = useRef(null);
-  const [isAddingMedicalRecord, setIsAddingMedicalRecord] = useState(false);
-  const [selectedPetForRecord, setSelectedPetForRecord] = useState(null);
   const navigate = useNavigate();
 
   // Estados para el modal de agenda
@@ -63,10 +59,13 @@ const ClientList = () => {
     last: false
   });
 
+  
+
   const [sortConfig, setSortConfig] = useState({
     sortBy: 'nombre',
     sortDirection: 'ASC'
   });
+  
 
   // Función para cargar clientes
   const loadClients = useCallback(async () => {
@@ -149,18 +148,13 @@ const ClientList = () => {
   };
 
   const handleAddHistory = (pet) => {
-    console.log('Pet seleccionada para agregar historial:', pet); // Log para debugging
-    console.log('Agregando historial para mascota:', pet.name)
-    if (!pet) {
+    if (!pet || !pet.id) {
       toast.error('Error: No se pudo identificar la mascota');
       return;
     }
-    setSelectedPetForRecord({
-      id: pet.id,
-      name: pet.name
-    });
-    setIsAddingMedicalRecord(true);
+    navigate(`/historial-clinico/mascota/${pet.id}`);
   };
+  
   
 
   const handleViewHistory = (pet) => {
@@ -198,8 +192,9 @@ const ClientList = () => {
 
   // Effects
   useEffect(() => {
-    loadClients();
+    loadClients();// Carga los servicios al iniciar
   }, [loadClients]);
+  
 
   useEffect(() => {
     return () => {
@@ -208,6 +203,9 @@ const ClientList = () => {
       }
     };
   }, []);
+
+  
+  
 
   return (
     <div className="p-6">
@@ -362,24 +360,7 @@ const ClientList = () => {
           />
         </Modal>
       )}
-      {/* Modal de registro medico */}
-      {isAddingMedicalRecord && selectedPetForRecord && (
-        <Modal
-          isOpen={isAddingMedicalRecord}
-          onClose={() => setIsAddingMedicalRecord(false)}
-        >
-          <AddMedicalRecord
-            petId={selectedPetForRecord.id}
-            petName={selectedPetForRecord.name}
-            onClose={() => setIsAddingMedicalRecord(false)}
-            onSuccess={() => {
-              setIsAddingMedicalRecord(false);
-              // Opcional: Recargar los datos del cliente
-              handleSelectClient(selectedClient);
-            }}
-          />
-        </Modal>
-      )}
+      
     </div>
   );
 };
