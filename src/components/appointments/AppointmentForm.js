@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 
 const AppointmentForm = ({ selectedVeterinarian, onSubmit, onBack }) => {
-  const [formData, setFormData] = useState({
-    appointmentDate: format(new Date(), 'yyyy-MM-dd'),
-    appointmentTime: '09:00',
-    reason: '',
-    notes: ''
-  });
+  const [appointmentDate, setAppointmentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [appointmentTime, setAppointmentTime] = useState('09:00');
+  const [reason, setReason] = useState('');
+  const [notes, setNotes] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const formData = {
+      appointmentDate,
+      appointmentTime,
+      reason,
+      notes
+    };
     onSubmit(formData);
   };
 
@@ -36,8 +40,8 @@ const AppointmentForm = ({ selectedVeterinarian, onSubmit, onBack }) => {
           </label>
           <input
             type="date"
-            value={formData.appointmentDate}
-            onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
+            value={appointmentDate}
+            onChange={(e) => setAppointmentDate(e.target.value)}
             min={format(new Date(), 'yyyy-MM-dd')}
             className="w-full px-3 py-2 border rounded-md"
             required
@@ -50,8 +54,8 @@ const AppointmentForm = ({ selectedVeterinarian, onSubmit, onBack }) => {
           </label>
           <input
             type="time"
-            value={formData.appointmentTime}
-            onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
+            value={appointmentTime}
+            onChange={(e) => setAppointmentTime(e.target.value)}
             min="09:00"
             max="18:00"
             step="1800"
@@ -66,8 +70,8 @@ const AppointmentForm = ({ selectedVeterinarian, onSubmit, onBack }) => {
           Motivo de la consulta
         </label>
         <textarea
-          value={formData.reason}
-          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
           rows="3"
           className="w-full px-3 py-2 border rounded-md"
           required
@@ -80,8 +84,8 @@ const AppointmentForm = ({ selectedVeterinarian, onSubmit, onBack }) => {
           Notas adicionales (opcional)
         </label>
         <textarea
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           rows="3"
           className="w-full px-3 py-2 border rounded-md"
           placeholder="Información adicional relevante"
