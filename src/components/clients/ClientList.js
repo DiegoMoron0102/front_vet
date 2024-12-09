@@ -170,13 +170,14 @@ const ClientList = () => {
   // Manejadores de búsqueda
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
-
+  
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-
+  
     searchTimeoutRef.current = setTimeout(() => {
       setPagination(prev => ({ ...prev, pageNumber: 0 }));
+      // Incluir el término de búsqueda en la solicitud
       loadClients();
     }, 500);
   }, [loadClients]);

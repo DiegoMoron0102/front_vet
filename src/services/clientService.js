@@ -1,13 +1,18 @@
 // src/services/clientService.js
 
 import axiosInstance from '../config/axios';
+import searchService from './searchService'
 
 // src/services/clientService.js
 
 const clientService = {
   async getClients(paginationRequest) {
     try {
-      // Construir parámetros exactamente como los espera el backend
+      // Si hay término de búsqueda, usar el endpoint de búsqueda
+      if (paginationRequest.search) {
+        return searchService.searchClients(paginationRequest.search, paginationRequest);
+      }
+
       const params = {
         page: paginationRequest.page || 0,
         size: paginationRequest.size || 10,
@@ -17,17 +22,7 @@ const clientService = {
         isActive: true
       };
 
-      // Si hay término de búsqueda, usar filterBy y filterValue
-      if (paginationRequest.search) {
-        params.filterBy = 'nombre';
-        params.filterValue = paginationRequest.search;
-      }
-
-      console.log('Request params:', params);
-
       const response = await axiosInstance.get('/users', { params });
-      console.log('Response:', response.data);
-      
       return response.data.data;
     } catch (error) {
       console.error('Error fetching clients:', error);

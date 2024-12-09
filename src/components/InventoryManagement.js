@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, AlertTriangle, X } from 'lucide-react';
 import Table from '../components/common/Table/Table';
 import axiosInstance from '../config/axios';
@@ -16,6 +16,8 @@ const InventoryManagement = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
 
   // Estado para formulario
   const [formData, setFormData] = useState({
@@ -23,7 +25,7 @@ const InventoryManagement = () => {
     quantity: 0,
     minThreshold: 0,
   });
-  
+
   // Estado para paginación y ordenamiento
   const [pagination, setPagination] = useState({
     pageNumber: 0,
@@ -45,54 +47,84 @@ const InventoryManagement = () => {
     OUT_OF_STOCK: 'Sin Stock'
   };
 
+  // Referencia para el timeout de búsqueda
+  const searchTimeoutRef = useRef(null);
+
   // Función para cargar items del inventario (memoizada)
-  const loadInventoryItems = useCallback(async () => {
+  const loadInventory = useCallback(async () => {
     try {
-      setIsLoading(true);
-      
-      // Preparar parámetros de la petición
-      const params = {
-        page: pagination.pageNumber,
-        size: pagination.pageSize,
-        sortBy: sortConfig.sortBy,
-        sortDirection: sortConfig.sortDirection
-      };
+        setIsLoading(true);
 
-      // Añadir filtros si existen
-      if (searchTerm) {
-        params.filterBy = 'name';
-        params.filterValue = searchTerm;
-      }
+        // Construir parámetros base
+        const params = {
+            page: pagination.pageNumber,
+            size: pagination.pageSize,
+            sortBy: sortConfig.sortBy,
+            sortDirection: sortConfig.sortDirection,
+        };
 
-      if (selectedStatus !== 'ALL') {
-        params.filterBy = 'status';
-        params.filterValue = selectedStatus;
-      }
+        let response;
+        if (searchTerm.trim() !== "") {
+            // Llamada al endpoint de búsqueda
+            response = await axiosInstance.get("/inventory/search", {
+                params: { ...params, searchTerm },
+            });
+        } else {
+            // Llamada al endpoint estándar
+            response = await axiosInstance.get("/inventory", { params });
+        }
 
-      const response = await axiosInstance.get('/inventory', { params });
-
-      if (response.data.success) {
-        setInventory(response.data.data.content);
-        setPagination(prev => ({
-          ...prev,
-          totalElements: response.data.data.totalElements,
-          totalPages: response.data.data.totalPages
-        }));
-      } else {
-        toast.error('Error cargando inventario');
-      }
+        if (response.data.success) {
+            setInventory(response.data.data.content);
+            setPagination((prev) => ({
+                ...prev,
+                totalElements: response.data.data.totalElements,
+                totalPages: response.data.data.totalPages,
+            }));
+        } else {
+            setInventory([]);
+            setPagination((prev) => ({
+                ...prev,
+                totalElements: 0,
+                totalPages: 0,
+            }));
+        }
     } catch (error) {
-      console.error('Error loading inventory:', error);
-      toast.error('Error al cargar el inventario');
+        console.error("Error loading inventory:", error);
+        toast.error("Error al cargar el inventario");
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
-  }, [pagination.pageNumber, pagination.pageSize, sortConfig, searchTerm, selectedStatus]);
+}, [pagination.pageNumber, pagination.pageSize, sortConfig, searchTerm]);
+
+const handleSearchChange = useCallback(
+  (e) => {
+      const value = e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1);
+      setSearchTerm(value);
+
+      // Debounce para limitar llamadas al endpoint
+      if (searchTimeoutRef.current) {
+          clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+          // Reiniciar la paginación al buscar
+          setPagination((prev) => ({
+              ...prev,
+              pageNumber: 0,
+          }));
+          loadInventory();
+      }, 200);
+  },
+  [loadInventory]
+);
 
   // Efecto para cargar datos del inventario
   useEffect(() => {
-    loadInventoryItems();
-  }, [loadInventoryItems]);
+    // Cargar datos inicialmente o al cambiar la paginación, orden o término de búsqueda
+    loadInventory();
+}, [loadInventory, pagination.pageNumber, sortConfig]);
+  
 
   // Funciones de manejo para operaciones CRUD
   const handleAddProduct = () => {
@@ -126,7 +158,7 @@ const InventoryManagement = () => {
       if (response.data.success) {
         toast.success('Producto agregado exitosamente');
         setIsAddModalOpen(false);
-        loadInventoryItems();
+        loadInventory();
       }
     } catch (error) {
       toast.error('Error al agregar el producto');
@@ -140,7 +172,7 @@ const InventoryManagement = () => {
       if (response.data.success) {
         toast.success('Producto actualizado exitosamente');
         setIsEditModalOpen(false);
-        loadInventoryItems();
+        loadInventory();
       }
     } catch (error) {
       toast.error('Error al actualizar el producto');
@@ -229,7 +261,7 @@ const InventoryManagement = () => {
           </div>
           <div className="space-y-4">
             <div>
-                <p>{item.id}</p>
+              <p>{item.id}</p>
               <h3 className="font-medium text-gray-700">Nombre del producto</h3>
               <p>{item.name}</p>
             </div>
@@ -314,11 +346,41 @@ const InventoryManagement = () => {
     }
   ];
 
+  const loadAlerts = useCallback(async () => {
+    try {
+      setIsLoadingAlerts(true);
+      const response = await axiosInstance.get('/inventory/low-stock', {
+        params: {
+          page: 0,
+          size: 10,
+          sortBy: 'name',
+          sortDirection: 'ASC'
+        }
+      });
+
+      if (response.data.success) {
+        setAlerts(response.data.data.content || []);
+      }
+    } catch (error) {
+      console.error('Error fetching low stock items:', error);
+      toast.error('Error al cargar alertas de stock bajo');
+    } finally {
+      setIsLoadingAlerts(false);
+    }
+  }, []);
+
+  // Cargar alertas solo al montar el componente
+  useEffect(() => {
+    loadAlerts();
+  }, [loadAlerts]);
+
   // Sección de alertas de stock bajo
   const LowStockAlerts = () => {
-    const lowStockItems = inventory.filter(item => item.quantity <= item.minThreshold && item.quantity > 0);
-    
-    if (lowStockItems.length === 0) return null;
+    if (isLoadingAlerts) {
+      return <div className="mb-6 p-4 bg-gray-50">Cargando alertas...</div>;
+    }
+
+    if (alerts.length === 0) return null;
 
     return (
       <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -327,9 +389,12 @@ const InventoryManagement = () => {
           Alertas de stock bajo
         </h3>
         <ul className="space-y-2">
-          {lowStockItems.map(item => (
+          {alerts.map(item => (
             <li key={item.id} className="text-yellow-700">
-              {item.name} - Quedan {item.quantity} unidades (Mínimo: {item.minThreshold})
+              {item.productName} - Quedan {item.currentStock} unidades (Mínimo: {item.minThreshold})
+              {item.status === 'CRITICAL' &&
+                <span className="ml-2 text-red-600 font-bold">(CRÍTICO)</span>
+              }
             </li>
           ))}
         </ul>
@@ -342,7 +407,7 @@ const InventoryManagement = () => {
       {/* Encabezado */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Gestión de Inventario</h1>
-        <button 
+        <button
           className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center"
           onClick={handleAddProduct}
         >
@@ -360,7 +425,7 @@ const InventoryManagement = () => {
           type="text"
           placeholder="Buscar producto..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchChange}
           className="px-4 py-2 border rounded-md flex-1"
         />
         <select
