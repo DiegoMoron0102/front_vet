@@ -22,10 +22,12 @@ const InventoryManagement = () => {
   // Estado para formulario
   const [formData, setFormData] = useState({
     name: '',
-    quantity: 0,
-    minThreshold: 0,
+    quantity: '',  // Cambiado a string vacío
+    minThreshold: '', // Cambiado a string vacío
+    price: '', // Cambiado a string vacío
+    recommendedOrderQuantity: ''
   });
-
+  
   // Estado para paginación y ordenamiento
   const [pagination, setPagination] = useState({
     pageNumber: 0,
@@ -124,6 +126,37 @@ const handleSearchChange = useCallback(
     // Cargar datos inicialmente o al cambiar la paginación, orden o término de búsqueda
     loadInventory();
 }, [loadInventory, pagination.pageNumber, sortConfig]);
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+  
+  // Si el campo está vacío, permitir que esté vacío
+  if (value === '') {
+    setFormData(prev => ({
+      ...prev,
+      [name]: ''
+    }));
+    return;
+  }
+
+  // Para campos numéricos, asegurar que sean números válidos
+  if (['quantity', 'minThreshold', 'price', 'recommendedOrderQuantity'].includes(name)) {
+    // Remover caracteres no numéricos excepto punto decimal para precio
+    const sanitizedValue = name === 'price' 
+      ? value.replace(/[^\d.]/g, '')
+      : value.replace(/\D/g, '');
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: sanitizedValue
+    }));
+  } else {
+    // Para campos de texto, actualizar normalmente
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+};
   
 
   // Funciones de manejo para operaciones CRUD
@@ -144,9 +177,11 @@ const handleSearchChange = useCallback(
   const handleEdit = (item) => {
     setSelectedItem(item);
     setFormData({
-      name: item.name,
-      quantity: item.quantity,
-      minThreshold: item.minThreshold,
+      name: item.name || '',
+      quantity: item.quantity?.toString() || '',
+      minThreshold: item.minThreshold?.toString() || '',
+      price: item.price?.toString() || '',
+      recommendedOrderQuantity: item.recommendedOrderQuantity?.toString() || ''
     });
     setIsEditModalOpen(true);
   };
@@ -154,7 +189,7 @@ const handleSearchChange = useCallback(
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('/inventory', formData);
+      const response = await axiosInstance.post('/inventory/items', formData);
       if (response.data.success) {
         toast.success('Producto agregado exitosamente');
         setIsAddModalOpen(false);
@@ -168,21 +203,34 @@ const handleSearchChange = useCallback(
   const handleSubmitEdit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.put(`/inventory/${selectedItem.id}`, formData);
+      const payload = {
+        quantity: parseInt(formData.quantity) || 0,
+        minThreshold: parseInt(formData.minThreshold) || 0,
+        price: parseFloat(formData.price) || 0,
+      };
+  
+      if (formData.recommendedOrderQuantity.trim() !== '') {
+        payload.recommendedOrderQuantity = parseInt(formData.recommendedOrderQuantity);
+      }
+  
+      const response = await axiosInstance.put(`/inventory/items/${selectedItem.id}`, payload);
+      
       if (response.data.success) {
         toast.success('Producto actualizado exitosamente');
         setIsEditModalOpen(false);
         loadInventory();
+        loadAlerts();
       }
     } catch (error) {
-      toast.error('Error al actualizar el producto');
+      console.error('Error updating product:', error);
+      toast.error(error.response?.data?.message || 'Error al actualizar el producto');
     }
   };
 
   // Modal genérico para formularios
   const FormModal = ({ isOpen, onClose, title, onSubmit }) => {
     if (!isOpen) return null;
-
+  
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg w-full max-w-md">
@@ -194,37 +242,80 @@ const handleSearchChange = useCallback(
           </div>
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre del producto</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Nombre del producto
+              </label>
               <input
                 type="text"
+                name="name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={handleInputChange}
                 className="mt-1 w-full p-2 border rounded-md"
                 required
+                disabled={title === "Editar Producto"}
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700">Cantidad</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Cantidad
+              </label>
               <input
-                type="number"
+                type="text" // Cambiado de number a text
+                name="quantity"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                onChange={handleInputChange}
                 className="mt-1 w-full p-2 border rounded-md"
                 min="0"
                 required
               />
             </div>
+  
             <div>
-              <label className="block text-sm font-medium text-gray-700">Cantidad mínima</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Cantidad mínima
+              </label>
               <input
-                type="number"
+                type="text" // Cambiado de number a text
+                name="minThreshold"
                 value={formData.minThreshold}
-                onChange={(e) => setFormData({ ...formData, minThreshold: parseInt(e.target.value) })}
+                onChange={handleInputChange}
                 className="mt-1 w-full p-2 border rounded-md"
                 min="0"
                 required
               />
             </div>
+  
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Precio
+              </label>
+              <input
+                type="text" // Cambiado de number a text
+                name="price"
+                value={formData.price}
+                onChange={handleInputChange}
+                className="mt-1 w-full p-2 border rounded-md"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+  
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Cantidad recomendada de pedido
+              </label>
+              <input
+                type="text" // Cambiado de number a text
+                name="recommendedOrderQuantity"
+                value={formData.recommendedOrderQuantity}
+                onChange={handleInputChange}
+                className="mt-1 w-full p-2 border rounded-md"
+                min="0"
+              />
+            </div>
+  
             <div className="flex justify-end space-x-2 pt-4">
               <button
                 type="button"
@@ -237,7 +328,7 @@ const handleSearchChange = useCallback(
                 type="submit"
                 className="px-4 py-2 text-white bg-purple-600 rounded-md hover:bg-purple-700"
               >
-                Guardar
+                {title === "Editar Producto" ? "Actualizar" : "Guardar"}
               </button>
             </div>
           </form>
