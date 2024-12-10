@@ -20,6 +20,7 @@ import AddMedicalRecord from '../components/AddMedicalRecord';
 import ServiceReports from '../components/ServiceReports';
 import PaymentHistory from '../components/PaymentHistory';
 import PaymentDetails from '../components/PaymentDetails';
+import ServiceForm from '../components/ServiceForm';
 
 
 // Componente para rutas protegidas
@@ -121,6 +122,18 @@ const AppRoutes = () => {
             <ServiceManagement />
           </PrivateRoute>
         } />
+
+        <Route path="/admin/services/new" element={
+          <PrivateRoute allowedRoles={['ADMINISTRADOR']}>
+            <ServiceForm  />
+          </PrivateRoute>
+        }/>
+
+        <Route path="/admin/services/edit/:id" element={
+          <PrivateRoute allowedRoles={['ADMINISTRADOR']}>
+            <ServiceForm  />
+          </PrivateRoute>
+        }/>
 
         {/* Ruta de citas del cliente - Solo accesible para CLIENTE */}
 
