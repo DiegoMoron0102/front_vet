@@ -43,16 +43,16 @@ const PaymentHistory = () => {
         const servicios = payment.serviciosRealizados.map((servicio) => ({
           serviceName: servicio.nombre,
           servicePrice: servicio.precioBase || 0,
-          customPrice: servicio.precioPersonalizado || null,
+          customPrice: servicio.precioPersonalizado || servicio.precioBase || 0, // Cambiar esta línea
           notes: servicio.notas || '',
         }));
-
+      
         const adicionales = payment.serviciosAdicionales.map((adicional) => ({
           serviceName: adicional.descripcion,
           servicePrice: adicional.precio || 0,
           notes: adicional.notas || '',
         }));
-
+      
         return {
           id: payment.id,
           fecha: new Date(payment.fecha).toLocaleString(),
@@ -63,6 +63,7 @@ const PaymentHistory = () => {
           veterinarioNombre: payment.veterinarioNombre,
         };
       });
+      
 
       setPayments(formattedPayments);
       toast.success('Pagos cargados con éxito');
@@ -93,18 +94,26 @@ const PaymentHistory = () => {
           gastosPorServicio: {},
         };
   
-        // Actualizar el estado con los datos del resumen
-        setSummary({
+        // Procesar el resumen considerando precios personalizados
+        const processedSummary = {
           totalGastado: summaryData.totalGastado || 0,
           gastosPorMascota: summaryData.gastosPorMascota || {},
-          gastosPorServicio: summaryData.gastosPorServicio || {},
-        });
+          gastosPorServicio: Object.fromEntries(
+            Object.entries(summaryData.gastosPorServicio).map(([servicio, monto]) => {
+              const customMonto = summaryData.customPrices?.[servicio] || monto; // Ajustar con precios personalizados
+              return [servicio, customMonto];
+            })
+          ),
+        };
+  
+        setSummary(processedSummary);
       } catch (error) {
         console.error("Error al cargar el resumen de pagos:", error);
         setSummary({ totalGastado: 0, gastosPorMascota: {}, gastosPorServicio: {} });
       }
     }
   }, [filters]);
+  
   
 
   useEffect(() => {
@@ -193,7 +202,7 @@ const PaymentHistory = () => {
                   {payment.servicios.map((servicio, index) => (
                     <div key={index}>
                       {servicio.serviceName} - $
-                      {servicio.servicePrice || servicio.customPrice || 0}{' '}
+                      {servicio.customPrice || servicio.servicePrice || 0}{' '}
                       <span className="text-gray-500 text-sm">
                         ({servicio.notes || 'Sin notas'})
                       </span>

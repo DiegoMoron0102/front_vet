@@ -161,10 +161,10 @@ const InventoryManagement = () => {
     loadInventory();
     loadAlerts();
   }, [loadInventory, loadAlerts]);
-
-  // Manejadores de eventos
+  
   const handleSubmitAdd = async (values) => {
     try {
+      console.log('Payload enviado para agregar:', values);
       const response = await axiosInstance.post('/inventory/items', values);
       if (response.data.success) {
         toast.success('Producto agregado exitosamente');
@@ -172,13 +172,14 @@ const InventoryManagement = () => {
         loadInventory();
       }
     } catch (error) {
-      toast.error('Error al agregar el producto');
-      throw error; // Propagar el error para que el formulario lo maneje
+      console.error('Error al agregar producto:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Error al agregar el producto');
     }
   };
-
+  
   const handleSubmitEdit = async (values) => {
     try {
+      console.log('Payload enviado para editar:', values);
       const response = await axiosInstance.put(`/inventory/items/${selectedItem.id}`, values);
       if (response.data.success) {
         toast.success('Producto actualizado exitosamente');
@@ -186,10 +187,11 @@ const InventoryManagement = () => {
         loadInventory();
       }
     } catch (error) {
-      toast.error('Error al actualizar el producto');
-      throw error;
+      console.error('Error al editar producto:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Error al actualizar el producto');
     }
   };
+  
 
   const handleViewDetails = async (item) => {
     setSelectedItem(item);
@@ -252,6 +254,8 @@ const InventoryManagement = () => {
       </div>
     );
   };
+
+  
 
   // Componente para el modal de visualización
   const ViewModal = ({ isOpen, onClose, item }) => {
