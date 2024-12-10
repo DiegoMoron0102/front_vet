@@ -93,7 +93,7 @@ const PetMedicalHistory = () => {
               <li key={index} className="border-b border-gray-200 pb-2">
                 <div className="flex justify-between items-center">
                   {/* Mostrar el nombre del servicio */}
-                  <p className="text-sm text-gray-700 font-medium">{servicio.nombreServicio}</p>
+                  <p className="text-sm text-gray-700 font-medium">{servicio.serviceName}</p>
                   {/* Mostrar el precio personalizado o el precio base */}
                   <p className="text-sm text-gray-500">
                     ${servicio.precioPersonalizado || servicio.precioBase || 'No especificado'}
@@ -107,6 +107,7 @@ const PetMedicalHistory = () => {
             ))}
           </ul>
         </div>
+
   
         {/* Botón para cerrar */}
         <button
