@@ -117,12 +117,14 @@ const ClientList = () => {
   const handleSelectClient = async (client) => {
     try {
       setSelectedClient(client);
+      localStorage.setItem('selectedClient', JSON.stringify(client)); // Guardar cliente en localStorage
       setIsLoading(true);
       setError('');
-
+  
       const response = await petService.getPetsByClientId(client.uid);
       if (response.success) {
         setPets(response.mascotas);
+        localStorage.setItem('pets', JSON.stringify(response.mascotas)); // Guardar mascotas en localStorage
       } else {
         setError('No se encontraron mascotas para este cliente');
         setPets([]);
@@ -135,6 +137,14 @@ const ClientList = () => {
       setIsLoading(false);
     }
   };
+  
+  const handleClearSelection = () => {
+    setSelectedClient(null);
+    setPets([]);
+    localStorage.removeItem('selectedClient');
+    localStorage.removeItem('pets');
+  };
+  
 
   const handleScheduleAppointment = (pet) => {
     console.log('Agendando cita para mascota:', pet);
@@ -191,10 +201,20 @@ const ClientList = () => {
     loadClients();
   }, [loadClients]);
 
-  // Effects
   useEffect(() => {
-    loadClients();// Carga los servicios al iniciar
+    const savedClient = localStorage.getItem('selectedClient');
+    const savedPets = localStorage.getItem('pets');
+  
+    if (savedClient) {
+      setSelectedClient(JSON.parse(savedClient));
+    }
+    if (savedPets) {
+      setPets(JSON.parse(savedPets));
+    }
+  
+    loadClients(); // Carga los clientes al iniciar
   }, [loadClients]);
+  
   
 
   useEffect(() => {
@@ -228,6 +248,14 @@ const ClientList = () => {
             onClear={handleSearchClear}
           />
         </div>
+        {selectedClient && (
+          <button
+            onClick={handleClearSelection}
+            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors duration-200"
+          >
+            Limpiar Selección
+          </button>
+        )}
       </div>
 
       {/* Tabla de clientes */}
