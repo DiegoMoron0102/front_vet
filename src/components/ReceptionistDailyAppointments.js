@@ -72,6 +72,11 @@ const ReceptionistDailyAppointments = () => {
       </span>
     );
   };
+  const handleDateChange = (e) => {
+    const date = new Date(e.target.value);
+    const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    setSelectedDate(utcDate);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -86,7 +91,7 @@ const ReceptionistDailyAppointments = () => {
             <input
               type="date"
               value={format(selectedDate, 'yyyy-MM-dd')}
-              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              onChange={handleDateChange}
               className="border-none focus:ring-0"
             />
           </div>
