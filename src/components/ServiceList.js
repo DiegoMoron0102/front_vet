@@ -58,40 +58,48 @@ const ServiceList = () => {
     try {
       setIsLoading(true);
   
-      // Si se seleccionan favoritos y el usuario no es veterinario, abortar
-      if (showFavorites && !isVeterinario) {
-        console.warn('El usuario no tiene permisos para ver favoritos');
-        setServices([]); // Asegúrate de limpiar los servicios
-        setPagination((prev) => ({
-          ...prev,
-          totalElements: 0,
-          totalPages: 0,
-        }));
-        return;
-      }
-  
       if (showFavorites && isVeterinario) {
-        // Cargar solo favoritos
         const favoritesResponse = await axios.get('/favorites');
         const favoriteServices = favoritesResponse.data.data || [];
-        const servicesWithFavorites = favoriteServices
-          .filter((item) => item.itemType === 'VETERINARY_SERVICE')
-          .map((item) => ({
-            id: item.itemId,
-            name: item.itemName,
-            price: item.price,
-            favorito: true, // Todos los servicios son favoritos aquí
-          }));
   
-        setServices(servicesWithFavorites);
+        // Filtrar solo servicios veterinarios y cargar detalles completos
+        const veterinaryServices = favoriteServices.filter(
+          (item) => item.itemType === 'VETERINARY_SERVICE'
+        );
+  
+        const servicesWithDetails = await Promise.all(
+          veterinaryServices.map(async (item) => {
+            try {
+              const serviceDetails = await axios.get(`/services/${item.itemId}/details`);
+              return {
+                id: item.itemId,
+                name: serviceDetails.data.data.name,
+                description: serviceDetails.data.data.description,
+                category: serviceDetails.data.data.category,
+                price: serviceDetails.data.data.price,
+                favorito: true, // Este servicio está marcado como favorito
+              };
+            } catch (error) {
+              console.error(`Error cargando detalles del servicio ${item.itemId}:`, error);
+              return {
+                id: item.itemId,
+                name: item.itemName,
+                price: item.price,
+                favorito: true,
+              };
+            }
+          })
+        );
+  
+        setServices(servicesWithDetails);
         setPagination((prev) => ({
           ...prev,
-          totalElements: servicesWithFavorites.length,
+          totalElements: servicesWithDetails.length,
           totalPages: 1, // Solo una página para favoritos
         }));
       } else {
-        // Cargar todos los servicios
-        let url = `/services/list?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
+        // Lógica existente para cargar todos los servicios
+        let url = `/services?page=${pagination.pageNumber}&size=${pagination.pageSize}&sortBy=name&sortDirection=ASC`;
   
         if (searchTerm && category !== 'All') {
           url += `&filterBy=name&filterValue=${searchTerm}&category=${category}`;
@@ -104,7 +112,6 @@ const ServiceList = () => {
         const response = await axios.get(url);
         const servicesData = response?.data?.data?.content || [];
   
-        // Obtener favoritos si el usuario es veterinario
         let favoriteServiceIds = [];
         if (isVeterinario) {
           const favoritesResponse = await axios.get('/favorites');
@@ -299,15 +306,103 @@ const ServiceList = () => {
         isLoading={isLoading}
       />
 
-      {isModalOpen && selectedService && (
-        <Modal isOpen={isModalOpen} onClose={closeModal} title="Detalles del Servicio">
-          <div>
-            <h3 className="text-xl font-bold">{selectedService.name}</h3>
-            <p><strong>Descripción:</strong> {selectedService.description}</p>
-            <p><strong>Precio:</strong> ${selectedService.price}</p>
-          </div>
-        </Modal>
+{isModalOpen && selectedService && (
+  <Modal isOpen={isModalOpen} onClose={closeModal} title="Detalles del Servicio">
+    <div className="space-y-4">
+      {/* Nombre del servicio */}
+      <div>
+        <h3 className="text-xl font-bold">{selectedService.name}</h3>
+      </div>
+
+      {/* Descripción */}
+      {selectedService.description && (
+        <div>
+          <p>
+            <strong>Descripción:</strong> {selectedService.description}
+          </p>
+        </div>
       )}
+
+      {/* Precio */}
+      <div>
+        <p>
+          <strong>Precio:</strong> ${selectedService.price}
+        </p>
+      </div>
+
+      {/* Categoría */}
+      {selectedService.category && (
+        <div>
+          <p>
+            <strong>Categoría:</strong> {selectedService.category}
+          </p>
+        </div>
+      )}
+
+      {/* Duración */}
+      {selectedService.durationMinutes && (
+        <div>
+          <p>
+            <strong>Duración:</strong> {selectedService.durationMinutes} minutos
+          </p>
+        </div>
+      )}
+
+      {/* Requisitos */}
+      {selectedService.requirements?.length > 0 && (
+        <div>
+          <p>
+            <strong>Requisitos:</strong>
+          </p>
+          <ul className="list-disc ml-6">
+            {selectedService.requirements.map((req, index) => (
+              <li key={index}>{req}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Recomendaciones */}
+      {selectedService.recommendations?.length > 0 && (
+        <div>
+          <p>
+            <strong>Recomendaciones:</strong>
+          </p>
+          <ul className="list-disc ml-6">
+            {selectedService.recommendations.map((rec, index) => (
+              <li key={index}>{rec}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Advertencias */}
+      {selectedService.warnings?.length > 0 && (
+        <div>
+          <p>
+            <strong>Advertencias:</strong>
+          </p>
+          <ul className="list-disc ml-6">
+            {selectedService.warnings.map((warning, index) => (
+              <li key={index}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Botón para cerrar */}
+      <div>
+        <button
+          onClick={closeModal}
+          className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </Modal>
+)}
+
     </div>
   );
 };
