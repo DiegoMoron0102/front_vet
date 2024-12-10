@@ -21,6 +21,7 @@ import ServiceReports from '../components/ServiceReports';
 import PaymentHistory from '../components/PaymentHistory';
 import PaymentDetails from '../components/PaymentDetails';
 import ServiceForm from '../components/ServiceForm';
+import ReceptionistDailyAppointments from '../components/ReceptionistDailyAppointments';
 
 
 // Componente para rutas protegidas
@@ -165,6 +166,14 @@ const AppRoutes = () => {
             <PaymentDetails />
           </PrivateRoute>
         } />
+        <Route
+          path="/receptionist/appointments"
+          element={
+            <PrivateRoute allowedRoles={['RECEPCIONISTA']}>
+              <ReceptionistDailyAppointments />
+            </PrivateRoute>
+          }
+        />
 
 
         

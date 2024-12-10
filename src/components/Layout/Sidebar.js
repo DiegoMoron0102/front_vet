@@ -30,11 +30,12 @@ const roleRoutes = {
   ],
   RECEPCIONISTA: [
     { path: '/dashboard', name: 'Dashboard', icon: HomeIcon },
-    { path: '/appointments', name: "Today's Appointments", icon: CalendarIcon },
+    //{ path: '/appointments', name: "Today's Appointments", icon: CalendarIcon },
     { path: '/clients', name: 'Clients', icon: UsersIcon },
     { path: '/pets', name: 'Pets', icon: PawPrintIcon },
     { path: '/inventory', name: 'Inventory', icon: PackageIcon },
     { path: '/profile', name: 'My Profile', icon: UserIcon },
+    { path: '/receptionist/appointments', name: "Today's Appointments", icon: CalendarIcon}
   ],
   CLIENTE: [
     { path: '/dashboard', name: 'Dashboard', icon: HomeIcon },
