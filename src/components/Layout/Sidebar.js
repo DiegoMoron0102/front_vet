@@ -48,9 +48,7 @@ const roleRoutes = {
   ],
   ADMINISTRADOR: [
     { path: '/dashboard', name: 'Dashboard', icon: HomeIcon },
-    { path: '/appointments', name: "Today's Appointments", icon: CalendarIcon },
     { path: '/clients', name: 'Clients', icon: UsersIcon },
-    { path: '/pets', name: 'Pets', icon: PawPrintIcon },
     { path: '/inventory', name: 'Inventory', icon: PackageIcon },
     { path: '/profile', name: 'My Profile', icon: UserIcon },
     { path : '/admin/services', name: 'Services', icon: PackageIcon },

@@ -87,12 +87,12 @@ const AppRoutes = () => {
 
 
         <Route path="/clients" element={
-          <PrivateRoute allowedRoles={['VETERINARIO', 'RECEPCIONISTA']}>
+          <PrivateRoute allowedRoles={['VETERINARIO', 'RECEPCIONISTA','ADMINISTRADOR']}>
             <ClientList />
           </PrivateRoute>
         } />
         <Route path="/inventory" element={
-          <PrivateRoute allowedRoles={['VETERINARIO', 'RECEPCIONISTA']}>
+          <PrivateRoute allowedRoles={['VETERINARIO', 'RECEPCIONISTA','ADMINISTRADOR']}>
             <InventoryManagement />
           </PrivateRoute>
         } />
