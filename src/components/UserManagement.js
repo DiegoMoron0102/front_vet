@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { UserCog, Plus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import userService from '../services/userService';
 import Modal from './common/Modal/Modal';
 import UserForm from '../components/users/UserForm';
+import axios from '../config/axios';
 
 const UserManagement = () => {
   // Estados para datos y UI
@@ -15,6 +16,7 @@ const UserManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const searchTimeoutRef = useRef(null);
   
   // Estados para paginación
   const [pagination, setPagination] = useState({
@@ -32,39 +34,44 @@ const UserManagement = () => {
 
   // Función para cargar usuarios
   const loadUsers = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      
-      const paginationRequest = {
-        page: pagination.pageNumber,
-        size: pagination.pageSize,
-        sortBy: sortConfig.sortBy,
-        sortDirection: sortConfig.sortDirection,
-        role: selectedRole,
-        isActive: selectedStatus === 'ACTIVE' ? true : 
-                 selectedStatus === 'INACTIVE' ? false : undefined,
-        search: searchTerm
-      };
+      const response = await axios.get('/users', {
+        params: {
+          page: pagination.pageNumber,
+          size: pagination.pageSize,
+          sortBy: sortConfig.sortBy,
+          sortDirection: sortConfig.sortDirection,
+          role: selectedRole !== 'ALL' ? selectedRole : undefined,
+          isActive: selectedStatus !== 'ALL' ? selectedStatus === 'ACTIVE' : undefined
+        }
+      });
 
-      const data = await userService.getUsers(paginationRequest);
-      
-      setUsers(data.content);
-      setPagination(prev => ({
-        ...prev,
-        totalElements: data.totalElements,
-        totalPages: data.totalPages
-      }));
+      if (response.data.success) {
+        setUsers(response.data.data.content);
+        setPagination(prev => ({
+          ...prev,
+          totalElements: response.data.data.totalElements || 0,
+          totalPages: response.data.data.totalPages || 0
+        }));
+      }
     } catch (error) {
-      toast.error('Error loading users: ' + error.message);
+      console.error('Error loading users:', error);
+      toast.error('Error al cargar usuarios');
     } finally {
       setIsLoading(false);
     }
-  }, [pagination.pageNumber, pagination.pageSize, sortConfig, selectedRole, selectedStatus, searchTerm]);
+  }, [pagination.pageNumber, pagination.pageSize, selectedRole, selectedStatus, sortConfig]);
+
 
   useEffect(() => {
     loadUsers();
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [loadUsers]);
-
   // Manejadores de eventos para CRUD
   const handleCreateUser = async (userData) => {
     try {
@@ -114,13 +121,54 @@ const UserManagement = () => {
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, pageNumber: newPage }));
   };
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+    
+    // Limpiar el timeout anterior si existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-  // const handleSort = (key) => {
-  //   setSortConfig(prev => ({
-  //     sortBy: key,
-  //     sortDirection: prev.sortBy === key && prev.sortDirection === 'ASC' ? 'DESC' : 'ASC'
-  //   }));
-  // };
+    // Solo realizar búsqueda si hay al menos 2 caracteres
+    if (value.trim().length >= 2) {
+      setIsLoading(true); // Indicar que está cargando
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await axios.get('/users/search', {
+            params: {
+              searchTerm: value,
+              page: 0, // Resetear a primera página
+              size: pagination.pageSize,
+              sortBy: sortConfig.sortBy,
+              sortDirection: sortConfig.sortDirection,
+              role: selectedRole !== 'ALL' ? selectedRole : undefined,
+              isActive: selectedStatus !== 'ALL' ? selectedStatus === 'ACTIVE' : undefined
+            }
+          });
+
+          if (response.data.success) {
+            setUsers(response.data.data.content);
+            setPagination(prev => ({
+              ...prev,
+              pageNumber: 0, // Resetear página actual
+              totalElements: response.data.data.totalElements || 0,
+              totalPages: response.data.data.totalPages || 0
+            }));
+          }
+        } catch (error) {
+          console.error('Error searching users:', error);
+          toast.error('Error al buscar usuarios');
+          // Mantener los usuarios actuales en caso de error
+        } finally {
+          setIsLoading(false);
+        }
+      }, 500); // Aumentado a 500ms para mejor desempeño
+    } else if (value.trim() === '') {
+      // Si el término de búsqueda está vacío, recargar usuarios normalmente
+      loadUsers();
+    }
+  }, [pagination.pageSize, selectedRole, selectedStatus, sortConfig, loadUsers]);
+
 
   return (
     <div className="p-6">
@@ -147,7 +195,7 @@ const UserManagement = () => {
             type="text"
             placeholder="Search users..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 pr-4 py-2 w-full border rounded-md"
           />
         </div>
