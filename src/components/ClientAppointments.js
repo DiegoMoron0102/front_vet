@@ -51,31 +51,45 @@ const ClientAppointments = () => {
 
   const handleRescheduleAppointment = async (e) => {
     e.preventDefault();
+  
+    // Validar campos
+    if (!newDate || !newTime) {
+      toast.error("Por favor, selecciona una nueva fecha y hora.");
+      return;
+    }
+  
+    if (!reason.trim()) {
+      toast.error("El motivo no puede estar vacío.");
+      return;
+    }
+  
+    // Crear el objeto de datos a enviar
+    const selectedDateTime = new Date(`${newDate}T${newTime}`).toISOString();
+    const payload = {
+      newDate: selectedDateTime,
+      reason: reason.trim(),
+    };
+  
     try {
-      // Crear la fecha completa usando la fecha y hora seleccionadas
-      const selectedDateTime = new Date(`${newDate}T${newTime}`);
-      
-      
-  
-      
-  
-      // Realizar la solicitud al backend
       const response = await axiosInstance.post(
         `/client/appointments/${selectedAppointment.id}/reschedule`,
-        { newDate: selectedDateTime, reason }
+        payload
       );
+  
       if (response.data.success) {
-        toast.success('Cita reprogramada exitosamente');
+        toast.success("Cita reprogramada exitosamente.");
         handleCloseModal();
         loadAppointments();
       } else {
-        toast.error('No se pudo reprogramar la cita');
+        toast.error("No se pudo reprogramar la cita.");
       }
     } catch (error) {
-      console.error('Error al reprogramar cita:', error);
-      toast.error(error.response?.data?.error?.message || 'Error desconocido');
+      console.error("Error al reprogramar cita:", error);
+      toast.error(error.response?.data?.message || "Error desconocido.");
     }
   };
+  
+  
   
 
   const handleCloseModal = () => {
